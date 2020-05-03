@@ -17,8 +17,11 @@
 		"vscode": "^1.43.0"
 	},
 	"activationEvents": [
-		"onLanguage:plaintext"
-	],
+		"onLanguage:typescript",
+		"onLanguage:javascript",
+		"onLanguage:typescriptreact",
+		"onLanguage:javascriptreact"
+	  ],
 	"main": "./client/out/extension",
 	"contributes": {
 		"configuration": {
