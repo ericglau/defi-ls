@@ -22,7 +22,7 @@
 		"onLanguage:typescriptreact",
 		"onLanguage:javascriptreact",
 		"onCommand:etherscan.show.url"
-	  ],
+	],
 	"main": "./client/out/extension",
 	"contributes": {
 		"configuration": {

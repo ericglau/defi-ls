@@ -255,7 +255,10 @@ connection.onCodeLens(
 connection.onCodeLensResolve(
 	(codeLens: CodeLens): CodeLens => {
 		// TODO get proper url
-		codeLens.command = Command.create("Etherscan (mainnet)", "etherscan.show.url", "https://etherscan.io/token/0x6b175474e89094c44da98b954eedeac495271d0f");
+		var Web3 = require('web3');
+		var web3 = new Web3();
+		
+		codeLens.command = Command.create("Etherscan (mainnet) - is valid address? " + new Boolean(web3.utils.isAddress("0x6b175474e89094c44da98b954eedeac495271d0f")).toString(), "etherscan.show.url", "https://etherscan.io/token/0x6b175474e89094c44da98b954eedeac495271d0f");
 		return codeLens;
 	}
 );
