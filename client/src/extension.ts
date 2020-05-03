@@ -4,7 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 
 import * as path from 'path';
-import { workspace, ExtensionContext } from 'vscode';
+import { workspace, ExtensionContext, commands, Uri } from 'vscode';
 
 import {
 	LanguageClient,
@@ -37,7 +37,7 @@ export function activate(context: ExtensionContext) {
 
 	// Options to control the language client
 	let clientOptions: LanguageClientOptions = {
-		// Register the server for plain text documents
+		// Register the server for js/ts documents
 		documentSelector: [{ scheme: 'file', language: 'javascript' }, { scheme: 'file', language: 'typescript' }],
 		synchronize: {
 			// Notify the server about file changes to '.clientrc files contained in the workspace
@@ -52,6 +52,12 @@ export function activate(context: ExtensionContext) {
 		serverOptions,
 		clientOptions
 	);
+
+	client.onReady().then(() => {
+		commands.registerCommand("etherscan.show.url", (url) => {
+			commands.executeCommand("vscode.open", Uri.parse(url));
+		})
+	});
 
 	// Start the client. This will also launch the server
 	client.start();

@@ -15,7 +15,8 @@ import {
 	CompletionItemKind,
 	TextDocumentPositionParams,
 	TextDocumentSyncKind,
-	InitializeResult
+	InitializeResult,
+	CodeLens
 } from 'vscode-languageserver';
 
 import {

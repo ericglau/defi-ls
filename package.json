@@ -20,7 +20,8 @@
 		"onLanguage:typescript",
 		"onLanguage:javascript",
 		"onLanguage:typescriptreact",
-		"onLanguage:javascriptreact"
+		"onLanguage:javascriptreact",
+		"onCommand:etherscan.show.url"
 	  ],
 	"main": "./client/out/extension",
 	"contributes": {
