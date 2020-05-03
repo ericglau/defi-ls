@@ -16,7 +16,9 @@ import {
 	TextDocumentPositionParams,
 	TextDocumentSyncKind,
 	InitializeResult,
-	CodeLens
+	CodeLens,
+	CodeLensParams,
+	Command
 } from 'vscode-languageserver';
 
 import {
@@ -57,6 +59,9 @@ connection.onInitialize((params: InitializeParams) => {
 			textDocumentSync: TextDocumentSyncKind.Full,
 			// Tell the client that the server supports code completion
 			completionProvider: {
+				resolveProvider: true
+			},
+			codeLensProvider : {
 				resolveProvider: true
 			}
 		}
@@ -222,6 +227,36 @@ connection.onCompletionResolve(
 			item.documentation = 'JavaScript documentation';
 		}
 		return item;
+	}
+);
+
+
+
+// Handle code lens requests
+connection.onCodeLens(
+	(_params: CodeLensParams): CodeLens[] => {
+		let document = documents.get(_params.textDocument.uri)
+		if (typeof document !== 'undefined') {
+			return [
+				{
+					// TODO find ethereum addresses from document
+					range: {
+						start: document.positionAt(0),
+						end: document.positionAt(5)
+					}
+				}
+			];
+		} else {
+			return [];
+		}
+	}
+);
+
+connection.onCodeLensResolve(
+	(codeLens: CodeLens): CodeLens => {
+		// TODO get proper url
+		codeLens.command = Command.create("Etherscan (mainnet)", "etherscan.show.url", "https://etherscan.io/token/0x6b175474e89094c44da98b954eedeac495271d0f");
+		return codeLens;
 	}
 );
 
