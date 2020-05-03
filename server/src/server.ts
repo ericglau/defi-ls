@@ -235,17 +235,47 @@ connection.onCompletionResolve(
 // Handle code lens requests
 connection.onCodeLens(
 	(_params: CodeLensParams): CodeLens[] => {
-		let document = documents.get(_params.textDocument.uri)
-		if (typeof document !== 'undefined') {
-			return [
+		let textDocument = documents.get(_params.textDocument.uri)
+		if (typeof textDocument !== 'undefined') {
+
+			// find all valid Ethereum addresses
+			let text = textDocument.getText();
+			let pattern = /0x[0-9a-fA-F]{40}\b/g;  // 0x then 40 hex chars then non hex char
+			let m: RegExpExecArray | null;
+
+			let problems = 0;
+			let codeLenses: CodeLens[] = [];
+			while ((m = pattern.exec(text)) && problems < 100 /*settings.maxNumberOfProblems*/) {
+				var Web3 = require('web3');
+				var web3 = new Web3();
+				let isValidAddress = web3.utils.isAddress(m[0])
+				if (isValidAddress === false) {
+					continue;
+				}
+
+				problems++;
+				let codeLens: CodeLens = {
+					range: {
+						start: textDocument.positionAt(m.index),
+						end: textDocument.positionAt(m.index + m[0].length)
+					},
+					data: "String:["+m[0]+"], is valid address:["+new Boolean(isValidAddress).toString() // TODO return useful data
+				};
+				codeLenses.push(codeLens);
+			}
+			return codeLenses;
+
+
+/*			return [
 				{
 					// TODO find ethereum addresses from document
 					range: {
 						start: document.positionAt(0),
 						end: document.positionAt(5)
 					}
+					
 				}
-			];
+			];*/
 		} else {
 			return [];
 		}
@@ -255,10 +285,9 @@ connection.onCodeLens(
 connection.onCodeLensResolve(
 	(codeLens: CodeLens): CodeLens => {
 		// TODO get proper url
-		var Web3 = require('web3');
-		var web3 = new Web3();
+
 		
-		codeLens.command = Command.create("Etherscan (mainnet) - is valid address? " + new Boolean(web3.utils.isAddress("0x6b175474e89094c44da98b954eedeac495271d0f")).toString(), "etherscan.show.url", "https://etherscan.io/token/0x6b175474e89094c44da98b954eedeac495271d0f");
+		codeLens.command = Command.create("Etherscan (mainnet) - data: " + codeLens.data.toString(), "etherscan.show.url", "https://etherscan.io/token/0x6b175474e89094c44da98b954eedeac495271d0f");
 		return codeLens;
 	}
 );
