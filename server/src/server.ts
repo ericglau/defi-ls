@@ -22,7 +22,7 @@ import {
 } from 'vscode-languageserver';
 
 import {
-	TextDocument
+	TextDocument, Range
 } from 'vscode-languageserver-textdocument';
 
 // Create a connection for the server. The connection uses Node's IPC as a transport.
@@ -36,6 +36,11 @@ let documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 let hasConfigurationCapability: boolean = false;
 let hasWorkspaceFolderCapability: boolean = false;
 let hasDiagnosticRelatedInformationCapability: boolean = false;
+
+let name : string = 'DeFi Language Support';
+
+var Web3 = require('web3');
+var web3 = new Web3();
 
 connection.onInitialize((params: InitializeParams) => {
 	let capabilities = params.capabilities;
@@ -146,23 +151,35 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// In this simple example we get the settings for every validate run.
 	let settings = await getDocumentSettings(textDocument.uri);
 
-	// The validator creates diagnostics for all uppercase words length 2 and more
-	let text = textDocument.getText();
-	let pattern = /\b[A-Z]{2,}\b/g;
-	let m: RegExpExecArray | null;
-
-	let problems = 0;
 	let diagnostics: Diagnostic[] = [];
-	while ((m = pattern.exec(text)) && problems < settings.maxNumberOfProblems) {
-		problems++;
+
+	let possibleEthereumAddresses : EthereumAddressLocation[] = findPossibleEthereumAddresses(textDocument);
+	let problems = 0;
+	possibleEthereumAddresses.forEach( (element) => {
+		if (problems < settings.maxNumberOfProblems) {
+			problems++;
+			if (!isValidEthereumAddress(element.address)) {
+				// Invalid checksum
+				addDiagnostic(element, `${element.address} is not a valid Ethereum address`, 'The string appears to be an Ethereum address but fails checksum.', DiagnosticSeverity.Error);
+			} else {
+				// Not a checksum address
+				var checksumAddress = web3.utils.toChecksumAddress(element.address);
+				if (element.address != checksumAddress) {
+					addDiagnostic(element, `${element.address} is not a checksum address`, 'Use a checksum address as a best practice to ensure the address is valid.', DiagnosticSeverity.Warning);
+				}
+			}
+		}
+	});
+
+	// Send the computed diagnostics to VSCode.
+	connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
+
+	function addDiagnostic(element: EthereumAddressLocation, message: string, details: string, severity: DiagnosticSeverity) {
 		let diagnostic: Diagnostic = {
-			severity: DiagnosticSeverity.Warning,
-			range: {
-				start: textDocument.positionAt(m.index),
-				end: textDocument.positionAt(m.index + m[0].length)
-			},
-			message: `${m[0]} is all uppercase.`,
-			source: 'ex'
+			severity: severity,
+			range: element.range,
+			message: message,
+			source: name
 		};
 		if (hasDiagnosticRelatedInformationCapability) {
 			diagnostic.relatedInformation = [
@@ -171,22 +188,12 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 						uri: textDocument.uri,
 						range: Object.assign({}, diagnostic.range)
 					},
-					message: 'Spelling matters'
-				},
-				{
-					location: {
-						uri: textDocument.uri,
-						range: Object.assign({}, diagnostic.range)
-					},
-					message: 'Particularly for names'
+					message: details
 				}
 			];
 		}
 		diagnostics.push(diagnostic);
 	}
-
-	// Send the computed diagnostics to VSCode.
-	connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
 }
 
 connection.onDidChangeWatchedFiles(_change => {
@@ -230,52 +237,54 @@ connection.onCompletionResolve(
 	}
 );
 
+export interface EthereumAddressLocation {
+    range: Range;
+    address: string;
+}
 
+// find all possible Ethereum addresses
+function findPossibleEthereumAddresses(textDocument: TextDocument) : EthereumAddressLocation[] {
+	let text = textDocument.getText();
+	let pattern = /0x[0-9a-fA-F]{40}\b/g;  // 0x then 40 hex chars then non hex char
+	let m: RegExpExecArray | null;
+
+	let problems = 0;
+	let locations: EthereumAddressLocation[] = [];
+	while ((m = pattern.exec(text)) && problems < 100 /*settings.maxNumberOfProblems*/) {
+		let location: EthereumAddressLocation = {
+			range: {
+				start: textDocument.positionAt(m.index),
+				end: textDocument.positionAt(m.index + m[0].length)
+			},
+			address: m[0] // Possible Ethereum address
+		};
+		locations.push(location);
+	}
+	return locations;
+}
+
+function isValidEthereumAddress(address: string) {
+	return web3.utils.isAddress(address)
+}
 
 // Handle code lens requests
 connection.onCodeLens(
 	(_params: CodeLensParams): CodeLens[] => {
 		let textDocument = documents.get(_params.textDocument.uri)
 		if (typeof textDocument !== 'undefined') {
-
-			// find all valid Ethereum addresses
-			let text = textDocument.getText();
-			let pattern = /0x[0-9a-fA-F]{40}\b/g;  // 0x then 40 hex chars then non hex char
-			let m: RegExpExecArray | null;
-
-			let problems = 0;
+			let possibleEthereumAddresses : EthereumAddressLocation[] = findPossibleEthereumAddresses(textDocument);
 			let codeLenses: CodeLens[] = [];
-			while ((m = pattern.exec(text)) && problems < 100 /*settings.maxNumberOfProblems*/) {
-				var Web3 = require('web3');
-				var web3 = new Web3();
-				let isValidAddress = web3.utils.isAddress(m[0])
-				if (isValidAddress === false) {
-					continue;
-				}
 
-				problems++;
-				let codeLens: CodeLens = {
-					range: {
-						start: textDocument.positionAt(m.index),
-						end: textDocument.positionAt(m.index + m[0].length)
-					},
-					data: "String:["+m[0]+"], is valid address:["+new Boolean(isValidAddress).toString() // TODO return useful data
-				};
-				codeLenses.push(codeLens);
-			}
+			possibleEthereumAddresses.forEach( (element) => {
+				if (isValidEthereumAddress(element.address)) {
+					let codeLens: CodeLens = {
+						range: element.range,
+						data: element.address // Valid Ethereum address
+					};
+					codeLenses.push(codeLens);
+				}
+			});
 			return codeLenses;
-
-
-/*			return [
-				{
-					// TODO find ethereum addresses from document
-					range: {
-						start: document.positionAt(0),
-						end: document.positionAt(5)
-					}
-					
-				}
-			];*/
 		} else {
 			return [];
 		}
@@ -284,10 +293,7 @@ connection.onCodeLens(
 
 connection.onCodeLensResolve(
 	(codeLens: CodeLens): CodeLens => {
-		// TODO get proper url
-
-		
-		codeLens.command = Command.create("Etherscan (mainnet) - data: " + codeLens.data.toString(), "etherscan.show.url", "https://etherscan.io/token/0x6b175474e89094c44da98b954eedeac495271d0f");
+		codeLens.command = Command.create("Ethereum address: " + codeLens.data.toString(), "etherscan.show.url", "https://etherscan.io/token/" + codeLens.data);
 		return codeLens;
 	}
 );
