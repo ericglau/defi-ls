@@ -37,7 +37,10 @@ let hasConfigurationCapability: boolean = false;
 let hasWorkspaceFolderCapability: boolean = false;
 let hasDiagnosticRelatedInformationCapability: boolean = false;
 
-let name : string = 'DeFi Language Support';
+const NAME: string = 'DeFi Language Support';
+
+const NOT_VALID_ADDRESS: string = 'NotValidAddress';
+const NOT_CHECKSUM_ADDRESS: string = 'NotChecksumAddress';
 
 var Web3 = require('web3');
 var web3 = new Web3();
@@ -160,12 +163,12 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 			problems++;
 			if (!isValidEthereumAddress(element.address)) {
 				// Invalid checksum
-				addDiagnostic(element, `${element.address} is not a valid Ethereum address`, 'The string appears to be an Ethereum address but fails checksum.', DiagnosticSeverity.Error);
+				addDiagnostic(element, `${element.address} is not a valid Ethereum address`, 'The string appears to be an Ethereum address but fails checksum.', DiagnosticSeverity.Error, NOT_VALID_ADDRESS);
 			} else {
 				// Not a checksum address
 				var checksumAddress = web3.utils.toChecksumAddress(element.address);
 				if (element.address != checksumAddress) {
-					addDiagnostic(element, `${element.address} is not a checksum address`, 'Use a checksum address as a best practice to ensure the address is valid.', DiagnosticSeverity.Warning);
+					addDiagnostic(element, `${element.address} is not a checksum address`, 'Use a checksum address as a best practice to ensure the address is valid.', DiagnosticSeverity.Warning, NOT_CHECKSUM_ADDRESS);
 				}
 			}
 		}
@@ -174,12 +177,13 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// Send the computed diagnostics to VSCode.
 	connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
 
-	function addDiagnostic(element: EthereumAddressLocation, message: string, details: string, severity: DiagnosticSeverity) {
+	function addDiagnostic(element: EthereumAddressLocation, message: string, details: string, severity: DiagnosticSeverity, code: string | undefined) {
 		let diagnostic: Diagnostic = {
 			severity: severity,
 			range: element.range,
 			message: message,
-			source: name
+			source: NAME,
+			code: code
 		};
 		if (hasDiagnosticRelatedInformationCapability) {
 			diagnostic.relatedInformation = [
