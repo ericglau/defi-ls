@@ -18,6 +18,8 @@ import {
 	InitializeResult,
 	CodeLens,
 	CodeLensParams,
+	CodeAction,
+	CodeActionKind,
 	Command
 } from 'vscode-languageserver';
 
@@ -71,6 +73,9 @@ connection.onInitialize((params: InitializeParams) => {
 			},
 			codeLensProvider : {
 				resolveProvider: true
+			},
+			codeActionProvider : {
+				codeActionKinds : [ CodeActionKind.QuickFix ]
 			}
 		}
 	};
@@ -301,6 +306,10 @@ connection.onCodeLensResolve(
 		return codeLens;
 	}
 );
+
+//connection.onCodeAction(
+
+//)
 
 /*
 connection.onDidOpenTextDocument((params) => {
