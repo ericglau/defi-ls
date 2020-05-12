@@ -50,6 +50,13 @@ const DIAGNOSTIC_TYPE_NOT_CHECKSUM_ADDRESS: string = 'NotChecksumAddress';
 const CODE_LENS_TYPE_ETH_ADDRESS: string = 'EthAddress';
 const CODE_LENS_TYPE_ETH_PRIVATE_KEY: string = 'EthPrivateKey';
 
+const MAINNET: string = 'mainnet';
+const ROPSTEN: string = 'ropsten';
+const KOVAN: string = 'kovan';
+const RINKEBY: string = 'rinkeby';
+const GOERLI: string = 'goerli';
+const NETWORKS : string[] = [ MAINNET, ROPSTEN, KOVAN, RINKEBY, GOERLI];
+
 var Web3 = require('web3');
 var web3 = new Web3();
 
@@ -321,11 +328,7 @@ connection.onCodeLens(
 			let possibleEthereumAddresses : StringLocation[] = findPossibleEthereumAddresses(textDocument);
 			possibleEthereumAddresses.forEach( (element) => {
 				if (isValidEthereumAddress(element.content)) {
-					let codeLens: CodeLens = {
-						range: element.range,
-						data: [CODE_LENS_TYPE_ETH_ADDRESS, element.content] // Valid Ethereum address
-					};
-					codeLenses.push(codeLens);
+					pushEthereumAddressCodeLenses(CODE_LENS_TYPE_ETH_ADDRESS, element.range, element.content, codeLenses);
 				}
 			});
 
@@ -333,11 +336,7 @@ connection.onCodeLens(
 			let possiblePublicKeys : StringLocation[] = findPossiblePrivateKeys(textDocument);
 			possiblePublicKeys.forEach( (element) => {
 				if (isPrivateKey(element.content)) {
-					let codeLens: CodeLens = {
-						range: element.range,
-						data: [CODE_LENS_TYPE_ETH_PRIVATE_KEY, toPublicKey(element.content)] // Ethereum private key to public address
-					};
-					codeLenses.push(codeLens);
+					pushEthereumAddressCodeLenses(CODE_LENS_TYPE_ETH_PRIVATE_KEY, element.range, toPublicKey(element.content), codeLenses);
 				}
 			});
 
@@ -349,14 +348,35 @@ connection.onCodeLens(
 	}
 );
 
+function pushEthereumAddressCodeLenses(codeLensType: string, range: Range, content: string, codeLenses: CodeLens[]) {
+	NETWORKS.forEach( (network) => {
+		let codeLens: CodeLens = { 
+			range: range, 
+			data: [codeLensType, network, content] 
+		};
+		codeLenses.push(codeLens);	
+	});
+}
+
 connection.onCodeLensResolve(
 	(codeLens: CodeLens): CodeLens => {
 		let codeLensType = codeLens.data[0];
-		let codeLensString = codeLens.data[1];
-		if (codeLensType === CODE_LENS_TYPE_ETH_ADDRESS) {
-			codeLens.command = Command.create("Ethereum address: " + codeLensString.toString(), "etherscan.show.url", "https://etherscan.io/token/" + codeLensString);
-		} else if (codeLensType === CODE_LENS_TYPE_ETH_PRIVATE_KEY) {
-			codeLens.command = Command.create("Private key for Ethereum address: " + codeLensString.toString(), "etherscan.show.url", "https://etherscan.io/token/" + codeLensString);
+		let network = codeLens.data[1];
+		let codeLensData = codeLens.data[2];
+		if (network === MAINNET) {
+			if (codeLensType === CODE_LENS_TYPE_ETH_ADDRESS) {
+				codeLens.command = Command.create("Ethereum address (mainnet): " + codeLensData.toString(), "etherscan.show.url", "https://etherscan.io/address/" + codeLensData);
+			} else if (codeLensType === CODE_LENS_TYPE_ETH_PRIVATE_KEY) {
+				codeLens.command = Command.create("Corresponding Ethereum address (mainnet): " + codeLensData.toString(), "etherscan.show.url", "https://etherscan.io/address/" + codeLensData);
+			}	
+		} else if (network === ROPSTEN) {
+			codeLens.command = Command.create("(ropsten)", "etherscan.show.url", "https://ropsten.etherscan.io/address/" + codeLensData);
+		} else if (network === KOVAN) {
+			codeLens.command = Command.create("(kovan)", "etherscan.show.url", "https://kovan.etherscan.io/address/" + codeLensData);
+		} else if (network === RINKEBY) {
+			codeLens.command = Command.create("(rinkeby)", "etherscan.show.url", "https://rinkeby.etherscan.io/address/" + codeLensData);
+		} else if (network === GOERLI) {
+			codeLens.command = Command.create("(goerli)", "etherscan.show.url", "https://goerli.etherscan.io/address/" + codeLensData);
 		}
 		return codeLens;
 	}
