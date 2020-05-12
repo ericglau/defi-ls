@@ -44,8 +44,11 @@ let hasDiagnosticRelatedInformationCapability: boolean = false;
 
 const NAME: string = 'DeFi Language Support';
 
-const NOT_VALID_ADDRESS: string = 'NotValidAddress';
-const NOT_CHECKSUM_ADDRESS: string = 'NotChecksumAddress';
+const DIAGNOSTIC_TYPE_NOT_VALID_ADDRESS: string = 'NotValidAddress';
+const DIAGNOSTIC_TYPE_NOT_CHECKSUM_ADDRESS: string = 'NotChecksumAddress';
+
+const CODE_LENS_TYPE_ETH_ADDRESS: string = 'EthAddress';
+const CODE_LENS_TYPE_ETH_PRIVATE_KEY: string = 'EthPrivateKey';
 
 var Web3 = require('web3');
 var web3 = new Web3();
@@ -171,12 +174,12 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 			problems++;
 			if (!isValidEthereumAddress(element.content)) {
 				// Invalid checksum
-				addDiagnostic(element, `${element.content} is not a valid Ethereum address`, 'The string appears to be an Ethereum address but fails checksum.', DiagnosticSeverity.Error, NOT_VALID_ADDRESS);
+				addDiagnostic(element, `${element.content} is not a valid Ethereum address`, 'The string appears to be an Ethereum address but fails checksum.', DiagnosticSeverity.Error, DIAGNOSTIC_TYPE_NOT_VALID_ADDRESS);
 			} else {
 				// Not a checksum address
 				var checksumAddress = web3.utils.toChecksumAddress(element.content);
 				if (element.content != checksumAddress) {
-					addDiagnostic(element, `${element.content} is not a checksum address`, 'Use a checksum address as a best practice to ensure the address is valid.', DiagnosticSeverity.Warning, NOT_CHECKSUM_ADDRESS);
+					addDiagnostic(element, `${element.content} is not a checksum address`, 'Use a checksum address as a best practice to ensure the address is valid.', DiagnosticSeverity.Warning, DIAGNOSTIC_TYPE_NOT_CHECKSUM_ADDRESS);
 				}
 			}
 		}
@@ -320,7 +323,7 @@ connection.onCodeLens(
 				if (isValidEthereumAddress(element.content)) {
 					let codeLens: CodeLens = {
 						range: element.range,
-						data: element.content // Valid Ethereum address
+						data: [CODE_LENS_TYPE_ETH_ADDRESS, element.content] // Valid Ethereum address
 					};
 					codeLenses.push(codeLens);
 				}
@@ -332,7 +335,7 @@ connection.onCodeLens(
 				if (isPrivateKey(element.content)) {
 					let codeLens: CodeLens = {
 						range: element.range,
-						data: toPublicKey(element.content) // Ethereum public address
+						data: [CODE_LENS_TYPE_ETH_PRIVATE_KEY, toPublicKey(element.content)] // Ethereum private key to public address
 					};
 					codeLenses.push(codeLens);
 				}
@@ -348,7 +351,13 @@ connection.onCodeLens(
 
 connection.onCodeLensResolve(
 	(codeLens: CodeLens): CodeLens => {
-		codeLens.command = Command.create("Ethereum address: " + codeLens.data.toString(), "etherscan.show.url", "https://etherscan.io/token/" + codeLens.data);
+		let codeLensType = codeLens.data[0];
+		let codeLensString = codeLens.data[1];
+		if (codeLensType === CODE_LENS_TYPE_ETH_ADDRESS) {
+			codeLens.command = Command.create("Ethereum address: " + codeLensString.toString(), "etherscan.show.url", "https://etherscan.io/token/" + codeLensString);
+		} else if (codeLensType === CODE_LENS_TYPE_ETH_PRIVATE_KEY) {
+			codeLens.command = Command.create("Private key for Ethereum address: " + codeLensString.toString(), "etherscan.show.url", "https://etherscan.io/token/" + codeLensString);
+		}
 		return codeLens;
 	}
 );
@@ -373,7 +382,7 @@ connection.onCodeAction(
 function getQuickFixes(diagnostics: Diagnostic[], textDocument: TextDocument, params: CodeActionParams) : CodeAction[] {
 	let codeActions : CodeAction[] = [];
 	diagnostics.forEach( (diagnostic) => {
-		if (diagnostic.code === NOT_CHECKSUM_ADDRESS) {
+		if (diagnostic.code === DIAGNOSTIC_TYPE_NOT_CHECKSUM_ADDRESS) {
 			let title : string = "Convert to checksum address";
 			let range : Range = diagnostic.range;
 			let replacement : string = web3.utils.toChecksumAddress(textDocument.getText(range));
