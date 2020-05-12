@@ -20,11 +20,14 @@ import {
 	CodeLensParams,
 	CodeAction,
 	CodeActionKind,
-	Command
+	CodeActionParams,
+	CodeActionContext,
+	Command,
+	WorkspaceEdit
 } from 'vscode-languageserver';
 
 import {
-	TextDocument, Range
+	TextDocument, Range, TextEdit
 } from 'vscode-languageserver-textdocument';
 
 // Create a connection for the server. The connection uses Node's IPC as a transport.
@@ -307,9 +310,52 @@ connection.onCodeLensResolve(
 	}
 );
 
-//connection.onCodeAction(
+connection.onCodeAction(
+	(_params: CodeActionParams): CodeAction[] => {
+		let codeActions : CodeAction[] = [];
 
-//)
+		let textDocument = documents.get(_params.textDocument.uri)
+		if (textDocument === undefined) {
+			return codeActions;
+		}
+		let context : CodeActionContext = _params.context;
+		let diagnostics : Diagnostic[] = context.diagnostics;
+
+		codeActions = getQuickFixes(diagnostics, textDocument, _params);
+
+		return codeActions;
+	}
+)
+
+function getQuickFixes(diagnostics: Diagnostic[], textDocument: TextDocument, params: CodeActionParams) : CodeAction[] {
+	let codeActions : CodeAction[] = [];
+	diagnostics.forEach( (diagnostic) => {
+		if (diagnostic.code === NOT_CHECKSUM_ADDRESS) {
+			let title : string = "Convert to checksum address";
+			let range : Range = diagnostic.range;
+			let replacement : string = "TEST REPLACEMENT"; // TODO get replacement
+			codeActions.push(getQuickFix(diagnostic, title, range, replacement, textDocument));
+		}
+	});
+	return codeActions;
+}
+
+function getQuickFix(diagnostic:Diagnostic, title:string, range:Range, replacement:string, textDocument:TextDocument) : CodeAction {
+	let textEdit : TextEdit = { 
+		range: range,
+		newText: replacement
+	};
+	let workspaceEdit : WorkspaceEdit = {
+		changes: { [textDocument.uri]:[textEdit] }
+	}
+	let codeAction : CodeAction = { 
+		title: title, 
+		kind: CodeActionKind.QuickFix,
+		edit: workspaceEdit,
+		diagnostics: [diagnostic]
+	}
+	return codeAction;
+}
 
 /*
 connection.onDidOpenTextDocument((params) => {
