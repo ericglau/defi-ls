@@ -333,7 +333,7 @@ function getQuickFixes(diagnostics: Diagnostic[], textDocument: TextDocument, pa
 		if (diagnostic.code === NOT_CHECKSUM_ADDRESS) {
 			let title : string = "Convert to checksum address";
 			let range : Range = diagnostic.range;
-			let replacement : string = "TEST REPLACEMENT"; // TODO get replacement
+			let replacement : string = web3.utils.toChecksumAddress(textDocument.getText(range));
 			codeActions.push(getQuickFix(diagnostic, title, range, replacement, textDocument));
 		}
 	});
