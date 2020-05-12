@@ -164,19 +164,19 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
 	let diagnostics: Diagnostic[] = [];
 
-	let possibleEthereumAddresses : EthereumAddressLocation[] = findPossibleEthereumAddresses(textDocument);
+	let possibleEthereumAddresses : StringLocation[] = findPossibleEthereumAddresses(textDocument);
 	let problems = 0;
 	possibleEthereumAddresses.forEach( (element) => {
 		if (problems < settings.maxNumberOfProblems) {
 			problems++;
-			if (!isValidEthereumAddress(element.address)) {
+			if (!isValidEthereumAddress(element.content)) {
 				// Invalid checksum
-				addDiagnostic(element, `${element.address} is not a valid Ethereum address`, 'The string appears to be an Ethereum address but fails checksum.', DiagnosticSeverity.Error, NOT_VALID_ADDRESS);
+				addDiagnostic(element, `${element.content} is not a valid Ethereum address`, 'The string appears to be an Ethereum address but fails checksum.', DiagnosticSeverity.Error, NOT_VALID_ADDRESS);
 			} else {
 				// Not a checksum address
-				var checksumAddress = web3.utils.toChecksumAddress(element.address);
-				if (element.address != checksumAddress) {
-					addDiagnostic(element, `${element.address} is not a checksum address`, 'Use a checksum address as a best practice to ensure the address is valid.', DiagnosticSeverity.Warning, NOT_CHECKSUM_ADDRESS);
+				var checksumAddress = web3.utils.toChecksumAddress(element.content);
+				if (element.content != checksumAddress) {
+					addDiagnostic(element, `${element.content} is not a checksum address`, 'Use a checksum address as a best practice to ensure the address is valid.', DiagnosticSeverity.Warning, NOT_CHECKSUM_ADDRESS);
 				}
 			}
 		}
@@ -185,7 +185,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// Send the computed diagnostics to VSCode.
 	connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
 
-	function addDiagnostic(element: EthereumAddressLocation, message: string, details: string, severity: DiagnosticSeverity, code: string | undefined) {
+	function addDiagnostic(element: StringLocation, message: string, details: string, severity: DiagnosticSeverity, code: string | undefined) {
 		let diagnostic: Diagnostic = {
 			severity: severity,
 			range: element.range,
@@ -249,26 +249,26 @@ connection.onCompletionResolve(
 	}
 );
 
-export interface EthereumAddressLocation {
+export interface StringLocation {
     range: Range;
-    address: string;
+    content: string;
 }
 
 // find all possible Ethereum addresses
-function findPossibleEthereumAddresses(textDocument: TextDocument) : EthereumAddressLocation[] {
+function findPossibleEthereumAddresses(textDocument: TextDocument) : StringLocation[] {
 	let text = textDocument.getText();
 	let pattern = /0x[0-9a-fA-F]{40}\b/g;  // 0x then 40 hex chars then non hex char
 	let m: RegExpExecArray | null;
 
 	let problems = 0;
-	let locations: EthereumAddressLocation[] = [];
+	let locations: StringLocation[] = [];
 	while ((m = pattern.exec(text)) && problems < 100 /*settings.maxNumberOfProblems*/) {
-		let location: EthereumAddressLocation = {
+		let location: StringLocation = {
 			range: {
 				start: textDocument.positionAt(m.index),
 				end: textDocument.positionAt(m.index + m[0].length)
 			},
-			address: m[0] // Possible Ethereum address
+			content: m[0] // Possible location
 		};
 		locations.push(location);
 	}
@@ -279,23 +279,66 @@ function isValidEthereumAddress(address: string) {
 	return web3.utils.isAddress(address)
 }
 
+function findPossiblePrivateKeys(textDocument: TextDocument) : StringLocation[] {
+	let text = textDocument.getText();
+	let pattern = /[0-9a-fA-F]{64}\b/g;  // 64 hex chars then non hex char
+	let m: RegExpExecArray | null;
+
+	let problems = 0;
+	let locations: StringLocation[] = [];
+	while ((m = pattern.exec(text)) && problems < 100 /*settings.maxNumberOfProblems*/) {
+		let location: StringLocation = {
+			range: {
+				start: textDocument.positionAt(m.index),
+				end: textDocument.positionAt(m.index + m[0].length)
+			},
+			content: "0x" + m[0] // 0x prepended private key
+		};
+		locations.push(location);
+	}
+	return locations;
+}
+
+function isPrivateKey(possiblePrivateKey: string) {
+	return true; //TODO
+}
+
+function toPublicKey(privateKey: string) : string {
+	return web3.eth.accounts.privateKeyToAccount(privateKey).address;
+}
+
 // Handle code lens requests
 connection.onCodeLens(
 	(_params: CodeLensParams): CodeLens[] => {
 		let textDocument = documents.get(_params.textDocument.uri)
 		if (typeof textDocument !== 'undefined') {
-			let possibleEthereumAddresses : EthereumAddressLocation[] = findPossibleEthereumAddresses(textDocument);
 			let codeLenses: CodeLens[] = [];
 
+			// Ethereum addresses
+			let possibleEthereumAddresses : StringLocation[] = findPossibleEthereumAddresses(textDocument);
 			possibleEthereumAddresses.forEach( (element) => {
-				if (isValidEthereumAddress(element.address)) {
+				if (isValidEthereumAddress(element.content)) {
 					let codeLens: CodeLens = {
 						range: element.range,
-						data: element.address // Valid Ethereum address
+						data: element.content // Valid Ethereum address
 					};
 					codeLenses.push(codeLens);
 				}
 			});
+
+			// Private keys to public addresses
+			let possiblePublicKeys : StringLocation[] = findPossiblePrivateKeys(textDocument);
+			possiblePublicKeys.forEach( (element) => {
+				if (isPrivateKey(element.content)) {
+					let codeLens: CodeLens = {
+						range: element.range,
+						data: toPublicKey(element.content) // Ethereum public address
+					};
+					codeLenses.push(codeLens);
+				}
+			});
+
+			// return
 			return codeLenses;
 		} else {
 			return [];
