@@ -249,11 +249,20 @@ connection.onCompletion(
 		// The pass parameter contains the position of the text document in
 		// which code complete got requested. For the example we ignore this
 		// info and always provide the same completion items.
+
+		let textEdit : TextEdit = { 
+			range: {
+				start: _textDocumentPosition.position,
+				end: _textDocumentPosition.position
+			},
+			newText: "vitalik.eth"
+		};
 		return [
 			{
-				label: 'TypeScript',
+				label: 'ENS',
 				kind: CompletionItemKind.Text,
-				data: 1
+				data: 1,
+				textEdit: textEdit
 			},
 			{
 				label: 'JavaScript',
@@ -269,8 +278,8 @@ connection.onCompletion(
 connection.onCompletionResolve(
 	(item: CompletionItem): CompletionItem => {
 		if (item.data === 1) {
-			item.detail = 'TypeScript details';
-			item.documentation = 'TypeScript documentation';
+			item.detail = 'vitalik.eth';
+			item.documentation = '0xd8da6bf26964af9d7eed9e03e53415d37aa96045';
 		} else if (item.data === 2) {
 			item.detail = 'JavaScript details';
 			item.documentation = 'JavaScript documentation';
