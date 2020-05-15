@@ -64,7 +64,7 @@ var Wallet = require('ethereumjs-wallet')
 var EthUtil = require('ethereumjs-util')
 
 // to be defined at runtime
-var web3provider;
+var web3provider: any;
 var ens: { 
 	resolver: (arg0: string) => { (): any; new(): any; addr: { (): Promise<any>; new(): any; }; };
 	 reverse: (arg0: string) => { (): any; new(): any; name: { (): Promise<any>; new(): any; }; };  
@@ -428,8 +428,11 @@ connection.onCodeLensResolve(
 			if (ensName != "") {
 				prefix = ensName + " | "
 			}
+			var web3connection = new Web3(web3provider);
+			let balance = await web3connection.eth.getBalance(address);
+			let postfix = balance > 0 ? (" : " + web3.utils.fromWei(balance) + " ETH") : "";
 			if (codeLensType === CODE_LENS_TYPE_ETH_ADDRESS) {
-				codeLens.command = Command.create(prefix + "Ethereum address (mainnet): " + address, "etherscan.show.url", "https://etherscan.io/address/" + address);
+				codeLens.command = Command.create(prefix + "Ethereum address (mainnet): " + address + postfix, "etherscan.show.url", "https://etherscan.io/address/" + address);
 			} else if (codeLensType === CODE_LENS_TYPE_ETH_PRIVATE_KEY) {
 				codeLens.command = Command.create(prefix + "Private key with Ethereum address (mainnet): " + address, "etherscan.show.url", "https://etherscan.io/address/" + address);
 			}	
