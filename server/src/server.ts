@@ -436,11 +436,15 @@ connection.onCodeLensResolve(
 			}).catch(e =>
 				connection.console.log("Could not reverse lookup ENS name for " + address + " due to error: " + e)
 			);
-
+			
+			let prefix = "";
+			if (ensName != "") {
+				prefix = ensName + " | "
+			}
 			if (codeLensType === CODE_LENS_TYPE_ETH_ADDRESS) {
-				codeLens.command = Command.create(ensName + " | Ethereum address (mainnet): " + address, "etherscan.show.url", "https://etherscan.io/address/" + address);
+				codeLens.command = Command.create(prefix + "Ethereum address (mainnet): " + address, "etherscan.show.url", "https://etherscan.io/address/" + address);
 			} else if (codeLensType === CODE_LENS_TYPE_ETH_PRIVATE_KEY) {
-				codeLens.command = Command.create(ensName + " | Corresponding Ethereum address (mainnet): " + address, "etherscan.show.url", "https://etherscan.io/address/" + address);
+				codeLens.command = Command.create(prefix + "Corresponding Ethereum address (mainnet): " + address, "etherscan.show.url", "https://etherscan.io/address/" + address);
 			}	
 		} else if (network === ROPSTEN) {
 			codeLens.command = Command.create("(ropsten)", "etherscan.show.url", "https://ropsten.etherscan.io/address/" + address);
