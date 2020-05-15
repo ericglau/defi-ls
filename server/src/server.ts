@@ -64,6 +64,7 @@ var web3 = new Web3();
 var ENS = require('ethereum-ens');
 var Wallet = require('ethereumjs-wallet')
 var EthUtil = require('ethereumjs-util')
+const {indexOfRegex, lastIndexOfRegex} = require('index-of-regex')
 
 // to be defined at runtime
 var web3provider: any;
@@ -506,22 +507,46 @@ connection.onHover(
 	(_params: HoverParams): Hover => {
 		let textDocument = documents.get(_params.textDocument.uri)
 		let position = _params.position
-		if (textDocument !== undefined) {
-			//const range = textDocument.getWordRangeAtPosition(position);
-			//const word = textDocument.getText(range);
-			let hover : Hover = {
-				contents: ""
-			}
-			if (textDocument === undefined) {
-				return hover;
-			}
-			hover.contents = "AAABBB";
-			return hover;
-	
+		let hover : Hover = {
+			contents: ""
 		}
+		if (textDocument !== undefined) {
+			var start = {
+				line: position.line,
+				character: 0,
+			};
+			var end = {
+				line: position.line + 1,
+				character: 0,
+			};
+			var text = textDocument.getText({ start, end });
+			var index = textDocument.offsetAt(position) - textDocument.offsetAt(start);
+			var word = getWord(text, index);
+			connection.console.log("Found hover word " + word);
+
+			hover.contents = word;
+		}
+		return hover;
 	}
 	
 );
+
+function getWord(text: string, index: number) {
+	connection.console.log("orig string " + text);
+	var beginSubstring = text.substring(0, index);
+	connection.console.log("begin substring " + beginSubstring);
+
+	var endSubstring = text.substring(index, text.length);
+	connection.console.log("end  substring " + endSubstring);
+	var boundaryRegex = /[^0-9a-zA-Z.]{1}/g; // boundaries are: not alphanumeric or dot
+    var first = lastIndexOfRegex(beginSubstring, boundaryRegex) + 1;
+	connection.console.log("first " + first);
+
+	var last = index + indexOfRegex(endSubstring, boundaryRegex);
+	connection.console.log("last " + last);
+
+	return text.substring(first !== -1 ? first : 0, last !== -1 ? last : text.length - 1);
+}
 
 /*
 connection.onDidOpenTextDocument((params) => {
