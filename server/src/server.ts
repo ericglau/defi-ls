@@ -63,6 +63,10 @@ var ENS = require('ethereum-ens');
 var Wallet = require('ethereumjs-wallet')
 var EthUtil = require('ethereumjs-util')
 
+// to be defined at runtime
+var web3provider;
+var ens;
+
 connection.onInitialize((params: InitializeParams) => {
 	let capabilities = params.capabilities;
 
@@ -181,10 +185,10 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 		connection.console.log("Infura project ID and/or secret has not been set. Obtain them from https://infura.io/ and set the in the VS Code settings by searching for \"Infura\".");
 	} else {
 		// do infura related stuff
-		var provider = new Web3.providers.HttpProvider('https://:' + settings.infuraProjectSecret + '@mainnet.infura.io/v3/' + settings.infuraProjectId);
-		var ens = new ENS(provider);
+		web3provider = new Web3.providers.HttpProvider('https://:' + settings.infuraProjectSecret + '@mainnet.infura.io/v3/' + settings.infuraProjectId);
+		ens = new ENS(web3provider);
 		 
-		var address = ens.resolver('vitalik.eth').addr().then(function(addr: string) { connection.console.log("the ens addr is " + addr) });
+		ens.resolver('vitalik.eth').addr().then(function(addr: string) { connection.console.log("the ens addr is " + addr) });
 	}
 /*
 
