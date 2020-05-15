@@ -59,9 +59,7 @@ const NETWORKS : string[] = [ MAINNET, ROPSTEN, KOVAN, RINKEBY, GOERLI];
 
 var Web3 = require('web3');
 var web3 = new Web3();
-
-
-
+var ENS = require('ethereum-ens');
 var Wallet = require('ethereumjs-wallet')
 var EthUtil = require('ethereumjs-util')
 
@@ -176,20 +174,21 @@ documents.onDidChangeContent(change => {
 
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
-
-
 	// In this simple example we get the settings for every validate run.
 	let settings = await getDocumentSettings(textDocument.uri);
 
+	if (settings.infuraProjectId === "" || settings.infuraProjectId === "") {
+		connection.console.log("Infura project ID and/or secret has not been set. Obtain them from https://infura.io/ and set the in the VS Code settings by searching for \"Infura\".");
+	} else {
+		// do infura related stuff
+		var provider = new Web3.providers.HttpProvider('https://:' + settings.infuraProjectSecret + '@mainnet.infura.io/v3/' + settings.infuraProjectId);
+		var ens = new ENS(provider);
+		 
+		var address = ens.resolver('vitalik.eth').addr().then(function(addr: string) { connection.console.log("the ens addr is " + addr) });
+	}
+/*
 
-	var ENS = require('ethereum-ens');
-	var Web3 = require('web3');
-
-	var provider = new Web3.providers.HttpProvider('https://:' + settings.infuraProjectSecret + '@mainnet.infura.io/v3/' + settings.infuraProjectId);
-	var ens = new ENS(provider);
-	 
-	var address = ens.resolver('vitalik.eth').addr().then(function(addr: string) { connection.console.log("the ens addr is " + addr) });
-
+*/
 /*	var ens = web3client.eth.ens;
 	 
 	var addr1 = ens.getAddress('vitalik.eth');
