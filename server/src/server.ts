@@ -580,9 +580,44 @@ async function getHoverMarkdownForAddress(address: string) {
 	var web3connection = new Web3(web3provider);
 	let balance = await web3connection.eth.getBalance(address);
 	if (balance > 0) {
-		buf += "**Mainnet Balance**: " + web3.utils.fromWei(balance) + " ETH\n\n";
+		buf += "**Mainnet Balance**:\n\n"
+		    + "    " + web3.utils.fromWei(balance) + " ETH\n";
+	}
+	let tokenBalance = await getTokenBalance(address, "0x6b175474e89094c44da98b954eedeac495271d0f"); // DAI
+	if (tokenBalance > 0) {
+		buf += "    " + web3.utils.fromWei(tokenBalance) + " DAI\n\n";
 	}
 	return buf;
+}
+
+async function getTokenBalance(walletAddress:string, tokenAddress:string) {
+	
+	// The minimum ABI to get ERC20 Token balance
+	let minABI = [
+	  // balanceOf
+	  {
+		"constant":true,
+		"inputs":[{"name":"_owner","type":"address"}],
+		"name":"balanceOf",
+		"outputs":[{"name":"balance","type":"uint256"}],
+		"type":"function"
+	  },
+	  // decimals
+	  {
+		"constant":true,
+		"inputs":[],
+		"name":"decimals",
+		"outputs":[{"name":"","type":"uint8"}],
+		"type":"function"
+	  }
+	];
+	
+	var web3connection = new Web3(web3provider);
+	let contract = new web3connection.eth.Contract(minABI, tokenAddress);
+
+	let balance = await contract.methods.balanceOf(walletAddress).call();
+	connection.console.log("Token balance " + balance);
+	return balance;
 }
 
 function getWord(text: string, index: number) {
