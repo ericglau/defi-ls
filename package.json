@@ -29,13 +29,13 @@
 			"type": "object",
 			"title": "Example configuration",
 			"properties": {
-				"languageServerExample.maxNumberOfProblems": {
+				"defi.maxNumberOfProblems": {
 					"scope": "resource",
 					"type": "number",
 					"default": 100,
 					"description": "Controls the maximum number of problems produced by the server."
 				},
-				"languageServerExample.trace.server": {
+				"defi.trace.server": {
 					"scope": "window",
 					"type": "string",
 					"enum": [
@@ -45,6 +45,16 @@
 					],
 					"default": "off",
 					"description": "Traces the communication between VS Code and the language server."
+				},
+				"defi.infuraProjectId": {
+					"scope": "window",
+					"type": "string",
+					"description": "Your Infura project ID"
+				},
+				"defi.infuraProjectSecret": {
+					"scope": "window",
+					"type": "string",
+					"description": "Your Infura project secret"
 				}
 			}
 		}

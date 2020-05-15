@@ -60,6 +60,8 @@ const NETWORKS : string[] = [ MAINNET, ROPSTEN, KOVAN, RINKEBY, GOERLI];
 var Web3 = require('web3');
 var web3 = new Web3();
 
+
+
 var Wallet = require('ethereumjs-wallet')
 var EthUtil = require('ethereumjs-util')
 
@@ -117,27 +119,28 @@ connection.onInitialized(() => {
 	}
 });
 
-// The example settings
-interface ExampleSettings {
+interface DefiSettings {
 	maxNumberOfProblems: number;
+	infuraProjectId: string;
+	infuraProjectSecret: string;
 }
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
-const defaultSettings: ExampleSettings = { maxNumberOfProblems: 1000 };
-let globalSettings: ExampleSettings = defaultSettings;
+const defaultSettings: DefiSettings = { maxNumberOfProblems: 1000, infuraProjectId: "", infuraProjectSecret: "" };
+let globalSettings: DefiSettings = defaultSettings;
 
 // Cache the settings of all open documents
-let documentSettings: Map<string, Thenable<ExampleSettings>> = new Map();
+let documentSettings: Map<string, Thenable<DefiSettings>> = new Map();
 
 connection.onDidChangeConfiguration(change => {
 	if (hasConfigurationCapability) {
 		// Reset all cached document settings
 		documentSettings.clear();
 	} else {
-		globalSettings = <ExampleSettings>(
-			(change.settings.languageServerExample || defaultSettings)
+		globalSettings = <DefiSettings>(
+			(change.settings.defi || defaultSettings)
 		);
 	}
 
@@ -145,7 +148,7 @@ connection.onDidChangeConfiguration(change => {
 	documents.all().forEach(validateTextDocument);
 });
 
-function getDocumentSettings(resource: string): Thenable<ExampleSettings> {
+function getDocumentSettings(resource: string): Thenable<DefiSettings> {
 	if (!hasConfigurationCapability) {
 		return Promise.resolve(globalSettings);
 	}
@@ -153,7 +156,7 @@ function getDocumentSettings(resource: string): Thenable<ExampleSettings> {
 	if (!result) {
 		result = connection.workspace.getConfiguration({
 			scopeUri: resource,
-			section: 'languageServerExample'
+			section: 'defi'
 		});
 		documentSettings.set(resource, result);
 	}
@@ -172,8 +175,37 @@ documents.onDidChangeContent(change => {
 });
 
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
+
+
+
 	// In this simple example we get the settings for every validate run.
 	let settings = await getDocumentSettings(textDocument.uri);
+
+
+	var ENS = require('ethereum-ens');
+	var Web3 = require('web3');
+
+	var provider = new Web3.providers.HttpProvider('https://:' + settings.infuraProjectSecret + '@mainnet.infura.io/v3/' + settings.infuraProjectId);
+	var ens = new ENS(provider);
+	 
+	var address = ens.resolver('vitalik.eth').addr().then(function(addr: string) { connection.console.log("the ens addr is " + addr) });
+
+/*	var ens = web3client.eth.ens;
+	 
+	var addr1 = ens.getAddress('vitalik.eth');
+	connection.console.log("the ens addr is " + addr1)*/
+/*
+	const address = '0xd8da6bf26964af9d7eed9e03e53415d37aa96045';
+	var name = await ens.reverse(address).name()
+	// Check to be sure the reverse record is correct.
+	if(address != await ens.resolver(name).addr()) {
+	  name = null;
+	}
+	connection.console.log("the ens name is " + name)
+*/
+
+
+
 
 	let diagnostics: Diagnostic[] = [];
 
