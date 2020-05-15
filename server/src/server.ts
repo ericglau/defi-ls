@@ -185,7 +185,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	let settings = await getDocumentSettings(textDocument.uri);
 
 	if (settings.infuraProjectId === "" || settings.infuraProjectId === "") {
-		connection.console.log("Infura project ID and/or secret has not been set. Obtain them from https://infura.io/ and set the in the VS Code settings by searching for \"Infura\".");
+		connection.console.error("Infura project ID and/or secret has not been set. Obtain them from https://infura.io/ and set the in the VS Code settings by searching for \"Infura\".");
 	} else {
 		// set up infura and ENS
 		web3provider = new Web3.providers.HttpProvider('https://:' + settings.infuraProjectSecret + '@mainnet.infura.io/v3/' + settings.infuraProjectId);
