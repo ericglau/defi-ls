@@ -190,29 +190,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 		// set up infura and ENS
 		web3provider = new Web3.providers.HttpProvider('https://:' + settings.infuraProjectSecret + '@mainnet.infura.io/v3/' + settings.infuraProjectId);
 		ens = new ENS(web3provider);
-
-		// test
-		ens.resolver('vitalik.eth').addr().then(function(addr: string) { connection.console.log("the ens addr is " + addr) });
 	}
-/*
-
-*/
-/*	var ens = web3client.eth.ens;
-	 
-	var addr1 = ens.getAddress('vitalik.eth');
-	connection.console.log("the ens addr is " + addr1)*/
-/*
-	const address = '0xd8da6bf26964af9d7eed9e03e53415d37aa96045';
-	var name = await ens.reverse(address).name()
-	// Check to be sure the reverse record is correct.
-	if(address != await ens.resolver(name).addr()) {
-	  name = null;
-	}
-	connection.console.log("the ens name is " + name)
-*/
-
-
-
 
 	let diagnostics: Diagnostic[] = [];
 
@@ -444,7 +422,7 @@ connection.onCodeLensResolve(
 			if (codeLensType === CODE_LENS_TYPE_ETH_ADDRESS) {
 				codeLens.command = Command.create(prefix + "Ethereum address (mainnet): " + address, "etherscan.show.url", "https://etherscan.io/address/" + address);
 			} else if (codeLensType === CODE_LENS_TYPE_ETH_PRIVATE_KEY) {
-				codeLens.command = Command.create(prefix + "Corresponding Ethereum address (mainnet): " + address, "etherscan.show.url", "https://etherscan.io/address/" + address);
+				codeLens.command = Command.create(prefix + "Private key with Ethereum address (mainnet): " + address, "etherscan.show.url", "https://etherscan.io/address/" + address);
 			}	
 		} else if (network === ROPSTEN) {
 			codeLens.command = Command.create("(ropsten)", "etherscan.show.url", "https://ropsten.etherscan.io/address/" + address);
