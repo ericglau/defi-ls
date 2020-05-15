@@ -23,7 +23,9 @@ import {
 	CodeActionParams,
 	CodeActionContext,
 	Command,
-	WorkspaceEdit
+	WorkspaceEdit,
+	HoverParams,
+	Hover
 } from 'vscode-languageserver';
 
 import {
@@ -99,6 +101,9 @@ connection.onInitialize((params: InitializeParams) => {
 			},
 			codeActionProvider : {
 				codeActionKinds : [ CodeActionKind.QuickFix ]
+			},
+			hoverProvider : {
+				workDoneProgress: false
 			}
 		}
 	};
@@ -495,6 +500,28 @@ function getQuickFix(diagnostic:Diagnostic, title:string, range:Range, replaceme
 	}
 	return codeAction;
 }
+
+connection.onHover(
+
+	(_params: HoverParams): Hover => {
+		let textDocument = documents.get(_params.textDocument.uri)
+		let position = _params.position
+		if (textDocument !== undefined) {
+			//const range = textDocument.getWordRangeAtPosition(position);
+			//const word = textDocument.getText(range);
+			let hover : Hover = {
+				contents: ""
+			}
+			if (textDocument === undefined) {
+				return hover;
+			}
+			hover.contents = "AAABBB";
+			return hover;
+	
+		}
+	}
+	
+);
 
 /*
 connection.onDidOpenTextDocument((params) => {
