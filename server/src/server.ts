@@ -338,7 +338,7 @@ function findPossiblePrivateKeys(textDocument: TextDocument) : StringLocation[] 
 				start: textDocument.positionAt(m.index),
 				end: textDocument.positionAt(m.index + m[0].length)
 			},
-			content: "0x" + m[0] // 0x prepended private key
+			content: normalizeHex(m[0]) // 0x prepended private key
 		};
 		locations.push(location);
 	}
@@ -358,6 +358,14 @@ function isPrivateKey(possiblePrivateKey: string) {
 	}
 	connection.console.log("return true");
 	return true;
+}
+
+// append 0x to the front of a hex string if it doesn't start with it
+function normalizeHex(hex:string) : string {
+	if (!hex.startsWith("0x")) {
+		return "0x" + hex;
+	}
+	return hex;
 }
 
 function toPublicKey(privateKey: string) : string {
@@ -459,15 +467,29 @@ async function reverseENSLookup(address: string) {
 	await ens.reverse(address).name().then(async function (name: string) {
 		connection.console.log("Found ENS name for " + address + " is: " + name);
 		// then forward ENS lookup to validate
-		await ens.resolver(name).addr().then(function (addr: string) {
+		let addr = await ENSLookup(name);
+		if (web3.utils.toChecksumAddress(address) == web3.utils.toChecksumAddress(addr)) {
+			connection.console.log("The names match!");
+			result = name;
+		}
+/*		await ens.resolver(name).addr().then(function (addr: string) {
 			connection.console.log("Original address is " + address);
 			connection.console.log("ENS resolved address is " + addr);
 			if (web3.utils.toChecksumAddress(address) == web3.utils.toChecksumAddress(addr)) {
 				connection.console.log("The names match!");
 				result = name;
 			}
-		}).catch(e => connection.console.log("Could not do lookup ENS address for resolved name " + name + " due to error: " + e));
+		}).catch(e => connection.console.log("Could not lookup ENS address for resolved name " + name + " due to error: " + e));*/
 	}).catch(e => connection.console.log("Could not reverse lookup ENS name for " + address + " due to error: " + e));
+	return result;
+}
+
+async function ENSLookup(name: string) {
+	let result = "";
+	await ens.resolver(name).addr().then(function (addr: string) {
+		connection.console.log("ENS resolved address is " + addr);
+		result = addr;
+	}).catch(e => connection.console.log("Could not do lookup ENS address for resolved name " + name + " due to error: " + e));
 	return result;
 }
 
@@ -523,27 +545,22 @@ connection.onHover(
 			var word = getWord(text, index);
 			connection.console.log("Found hover word " + word);
 
-			let buf : MarkedString = ""
+			let buf : MarkedString = "";
 			if (isValidEthereumAddress(word)) {
-				// Ethereum address
-				// Display ENS name
-				// Display ETH and DAI balances
-				buf += "**[Ethereum]**\n\n"
-					 + "**Address**: " + word + "\n\n";
-				// reverse ENS lookup
-				let ensName : string = await reverseENSLookup(word);
-				if (ensName != "") {
-					buf += "**ENS Name**: " + ensName + "\n\n";
-				}
-				var web3connection = new Web3(web3provider);
-				let balance = await web3connection.eth.getBalance(word);
-				if (balance > 0) {
-					buf += "**Mainnet Balance**: " + web3.utils.fromWei(balance) + " ETH\n\n";
-				}
+				// Display Ethereum address, ENS name, mainnet ETH and DAI balances
+				buf = await getHoverMarkdownForAddress(word);
 			} else {
-				// if it's an ENS name
-				// 		Lookup Ethereum address
-				//      Display ETH and DAI balances
+				let normalized = normalizeHex(word);
+				if (isPrivateKey(normalized)) {
+					// Convert to public key then display
+					buf = await getHoverMarkdownForAddress(toPublicKey(normalized));
+				} else {
+					// If it's not a private key, check if it has an ENS name
+					let address = await ENSLookup(word);
+					if (address != "") {
+						buf = await getHoverMarkdownForAddress(address);
+					}
+				}
 			}
 			hover.contents = buf;
 		}
@@ -551,6 +568,22 @@ connection.onHover(
 	}
 	
 );
+
+async function getHoverMarkdownForAddress(address: string) {
+	let buf: MarkedString = "**[Ethereum]**\n\n"
+		+ "**Address**: " + address + "\n\n";
+	// reverse ENS lookup
+	let ensName: string = await reverseENSLookup(address);
+	if (ensName != "") {
+		buf += "**ENS Name**: " + ensName + "\n\n";
+	}
+	var web3connection = new Web3(web3provider);
+	let balance = await web3connection.eth.getBalance(address);
+	if (balance > 0) {
+		buf += "**Mainnet Balance**: " + web3.utils.fromWei(balance) + " ETH\n\n";
+	}
+	return buf;
+}
 
 function getWord(text: string, index: number) {
 	connection.console.log("orig string " + text);
