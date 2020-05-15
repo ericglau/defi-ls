@@ -65,7 +65,10 @@ var EthUtil = require('ethereumjs-util')
 
 // to be defined at runtime
 var web3provider;
-var ens;
+var ens: { 
+	resolver: (arg0: string) => { (): any; new(): any; addr: { (): Promise<any>; new(): any; }; };
+	 reverse: (arg0: string) => { (): any; new(): any; name: { (): Promise<any>; new(): any; }; };  
+};
 
 connection.onInitialize((params: InitializeParams) => {
 	let capabilities = params.capabilities;
@@ -184,10 +187,11 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	if (settings.infuraProjectId === "" || settings.infuraProjectId === "") {
 		connection.console.log("Infura project ID and/or secret has not been set. Obtain them from https://infura.io/ and set the in the VS Code settings by searching for \"Infura\".");
 	} else {
-		// do infura related stuff
+		// set up infura and ENS
 		web3provider = new Web3.providers.HttpProvider('https://:' + settings.infuraProjectSecret + '@mainnet.infura.io/v3/' + settings.infuraProjectId);
 		ens = new ENS(web3provider);
-		 
+
+		// test
 		ens.resolver('vitalik.eth').addr().then(function(addr: string) { connection.console.log("the ens addr is " + addr) });
 	}
 /*
@@ -408,24 +412,44 @@ function pushEthereumAddressCodeLenses(codeLensType: string, range: Range, conte
 }
 
 connection.onCodeLensResolve(
-	(codeLens: CodeLens): CodeLens => {
+	async (codeLens: CodeLens): Promise<CodeLens> => {
 		let codeLensType = codeLens.data[0];
 		let network = codeLens.data[1];
 		let codeLensData = codeLens.data[2];
+		let address : string = codeLensData.toString();
 		if (network === MAINNET) {
+			let ensName : string = "";
+			// reverse ENS lookup
+			await ens.reverse(address).name().then(async function(name: string) { 
+				connection.console.log("Found ENS name for " + address + " is: " + name); 
+				// then forward ENS lookup to validate
+				await ens.resolver(name).addr().then(function(addr: string) { 
+					connection.console.log("Original address is " + address); 
+					connection.console.log("ENS resolved address is " + addr);
+					if (web3.utils.toChecksumAddress(address) == web3.utils.toChecksumAddress(addr)) {
+						connection.console.log("The names match!"); 
+						ensName = name;
+					}
+				}).catch(e =>
+					connection.console.log("Could not do lookup ENS address for resolved name " + name + " due to error: " + e)
+				);
+			}).catch(e =>
+				connection.console.log("Could not reverse lookup ENS name for " + address + " due to error: " + e)
+			);
+
 			if (codeLensType === CODE_LENS_TYPE_ETH_ADDRESS) {
-				codeLens.command = Command.create("Ethereum address (mainnet): " + codeLensData.toString(), "etherscan.show.url", "https://etherscan.io/address/" + codeLensData);
+				codeLens.command = Command.create(ensName + " | Ethereum address (mainnet): " + address, "etherscan.show.url", "https://etherscan.io/address/" + address);
 			} else if (codeLensType === CODE_LENS_TYPE_ETH_PRIVATE_KEY) {
-				codeLens.command = Command.create("Corresponding Ethereum address (mainnet): " + codeLensData.toString(), "etherscan.show.url", "https://etherscan.io/address/" + codeLensData);
+				codeLens.command = Command.create(ensName + " | Corresponding Ethereum address (mainnet): " + address, "etherscan.show.url", "https://etherscan.io/address/" + address);
 			}	
 		} else if (network === ROPSTEN) {
-			codeLens.command = Command.create("(ropsten)", "etherscan.show.url", "https://ropsten.etherscan.io/address/" + codeLensData);
+			codeLens.command = Command.create("(ropsten)", "etherscan.show.url", "https://ropsten.etherscan.io/address/" + address);
 		} else if (network === KOVAN) {
-			codeLens.command = Command.create("(kovan)", "etherscan.show.url", "https://kovan.etherscan.io/address/" + codeLensData);
+			codeLens.command = Command.create("(kovan)", "etherscan.show.url", "https://kovan.etherscan.io/address/" + address);
 		} else if (network === RINKEBY) {
-			codeLens.command = Command.create("(rinkeby)", "etherscan.show.url", "https://rinkeby.etherscan.io/address/" + codeLensData);
+			codeLens.command = Command.create("(rinkeby)", "etherscan.show.url", "https://rinkeby.etherscan.io/address/" + address);
 		} else if (network === GOERLI) {
-			codeLens.command = Command.create("(goerli)", "etherscan.show.url", "https://goerli.etherscan.io/address/" + codeLensData);
+			codeLens.command = Command.create("(goerli)", "etherscan.show.url", "https://goerli.etherscan.io/address/" + address);
 		}
 		return codeLens;
 	}
