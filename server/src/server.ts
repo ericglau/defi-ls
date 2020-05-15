@@ -60,6 +60,9 @@ const NETWORKS : string[] = [ MAINNET, ROPSTEN, KOVAN, RINKEBY, GOERLI];
 var Web3 = require('web3');
 var web3 = new Web3();
 
+var Wallet = require('ethereumjs-wallet')
+var EthUtil = require('ethereumjs-util')
+
 connection.onInitialize((params: InitializeParams) => {
 	let capabilities = params.capabilities;
 
@@ -310,7 +313,18 @@ function findPossiblePrivateKeys(textDocument: TextDocument) : StringLocation[] 
 }
 
 function isPrivateKey(possiblePrivateKey: string) {
-	return true; //TODO
+	try {
+		connection.console.log(`string is ` + possiblePrivateKey);
+		var privateKeyBuffer = EthUtil.toBuffer(possiblePrivateKey)
+		Wallet.fromPrivateKey(privateKeyBuffer)
+		//new ethers.Wallet(possiblePrivateKey)
+	} catch(e) {
+		connection.console.log("return false");
+		connection.console.log(e);
+		return false;
+	}
+	connection.console.log("return true");
+	return true;
 }
 
 function toPublicKey(privateKey: string) : string {

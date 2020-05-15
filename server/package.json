@@ -14,7 +14,9 @@
 	"dependencies": {
 		"vscode-languageserver": "^6.1.1",
 		"vscode-languageserver-textdocument": "^1.0.1",
-		"web3": "^1.2.7"
+		"web3": "^1.2.7",
+		"ethereumjs-wallet": "^0.6.3",
+		"ethereumjs-util": "^7.0.0"
 	},
 	"scripts": {}
 }
