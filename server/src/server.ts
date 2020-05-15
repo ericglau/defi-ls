@@ -25,7 +25,8 @@ import {
 	Command,
 	WorkspaceEdit,
 	HoverParams,
-	Hover
+	Hover,
+	MarkedString
 } from 'vscode-languageserver';
 
 import {
@@ -411,34 +412,15 @@ connection.onCodeLensResolve(
 		let codeLensData = codeLens.data[2];
 		let address : string = codeLensData.toString();
 		if (network === MAINNET) {
-			let ensName : string = "";
 			// reverse ENS lookup
-			await ens.reverse(address).name().then(async function(name: string) { 
-				connection.console.log("Found ENS name for " + address + " is: " + name); 
-				// then forward ENS lookup to validate
-				await ens.resolver(name).addr().then(function(addr: string) { 
-					connection.console.log("Original address is " + address); 
-					connection.console.log("ENS resolved address is " + addr);
-					if (web3.utils.toChecksumAddress(address) == web3.utils.toChecksumAddress(addr)) {
-						connection.console.log("The names match!"); 
-						ensName = name;
-					}
-				}).catch(e =>
-					connection.console.log("Could not do lookup ENS address for resolved name " + name + " due to error: " + e)
-				);
-			}).catch(e =>
-				connection.console.log("Could not reverse lookup ENS name for " + address + " due to error: " + e)
-			);
+			let ensName : string = await reverseENSLookup(address);
 			
 			let prefix = "";
 			if (ensName != "") {
 				prefix = ensName + " | "
 			}
-			var web3connection = new Web3(web3provider);
-			let balance = await web3connection.eth.getBalance(address);
-			let postfix = balance > 0 ? (" : " + web3.utils.fromWei(balance) + " ETH") : "";
 			if (codeLensType === CODE_LENS_TYPE_ETH_ADDRESS) {
-				codeLens.command = Command.create(prefix + "Ethereum address (mainnet): " + address + postfix, "etherscan.show.url", "https://etherscan.io/address/" + address);
+				codeLens.command = Command.create(prefix + "Ethereum address (mainnet): " + address, "etherscan.show.url", "https://etherscan.io/address/" + address);
 			} else if (codeLensType === CODE_LENS_TYPE_ETH_PRIVATE_KEY) {
 				codeLens.command = Command.create(prefix + "Private key with Ethereum address (mainnet): " + address, "etherscan.show.url", "https://etherscan.io/address/" + address);
 			}	
@@ -472,6 +454,23 @@ connection.onCodeAction(
 	}
 )
 
+async function reverseENSLookup(address: string) {
+	let result = "";
+	await ens.reverse(address).name().then(async function (name: string) {
+		connection.console.log("Found ENS name for " + address + " is: " + name);
+		// then forward ENS lookup to validate
+		await ens.resolver(name).addr().then(function (addr: string) {
+			connection.console.log("Original address is " + address);
+			connection.console.log("ENS resolved address is " + addr);
+			if (web3.utils.toChecksumAddress(address) == web3.utils.toChecksumAddress(addr)) {
+				connection.console.log("The names match!");
+				result = name;
+			}
+		}).catch(e => connection.console.log("Could not do lookup ENS address for resolved name " + name + " due to error: " + e));
+	}).catch(e => connection.console.log("Could not reverse lookup ENS name for " + address + " due to error: " + e));
+	return result;
+}
+
 function getQuickFixes(diagnostics: Diagnostic[], textDocument: TextDocument, params: CodeActionParams) : CodeAction[] {
 	let codeActions : CodeAction[] = [];
 	diagnostics.forEach( (diagnostic) => {
@@ -504,7 +503,7 @@ function getQuickFix(diagnostic:Diagnostic, title:string, range:Range, replaceme
 
 connection.onHover(
 
-	(_params: HoverParams): Hover => {
+	async (_params: HoverParams): Promise<Hover> => {
 		let textDocument = documents.get(_params.textDocument.uri)
 		let position = _params.position
 		let hover : Hover = {
@@ -524,7 +523,29 @@ connection.onHover(
 			var word = getWord(text, index);
 			connection.console.log("Found hover word " + word);
 
-			hover.contents = word;
+			let buf : MarkedString = ""
+			if (isValidEthereumAddress(word)) {
+				// Ethereum address
+				// Display ENS name
+				// Display ETH and DAI balances
+				buf += "**[Ethereum]**\n\n"
+					 + "**Address**: " + word + "\n\n";
+				// reverse ENS lookup
+				let ensName : string = await reverseENSLookup(word);
+				if (ensName != "") {
+					buf += "**ENS Name**: " + ensName + "\n\n";
+				}
+				var web3connection = new Web3(web3provider);
+				let balance = await web3connection.eth.getBalance(word);
+				if (balance > 0) {
+					buf += "**Mainnet Balance**: " + web3.utils.fromWei(balance) + " ETH\n\n";
+				}
+			} else {
+				// if it's an ENS name
+				// 		Lookup Ethereum address
+				//      Display ETH and DAI balances
+			}
+			hover.contents = buf;
 		}
 		return hover;
 	}
