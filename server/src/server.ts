@@ -66,7 +66,7 @@ var ENS = require('ethereum-ens');
 var Wallet = require('ethereumjs-wallet')
 var EthUtil = require('ethereumjs-util')
 const {indexOfRegex, lastIndexOfRegex} = require('index-of-regex')
-var request = require("request")
+var request = require("request-promise")
 
 // to be defined at runtime
 var web3provider: any;
@@ -611,7 +611,7 @@ async function getHoverMarkdownForAddress(address: string) {
 			}
 		};
 	
-		request(options, async function (error: string | undefined, response: any, body: any) {
+		await request(options, async function (error: string | undefined, response: any, body: any) {
 			if (error)
 				throw new Error(error);
 			var result = JSON.parse(body);

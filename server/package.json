@@ -19,7 +19,7 @@
 		"ethereumjs-util": "^7.0.0",
 		"ethereum-ens": "^0.8.0",
 		"index-of-regex": "^1.0.0",
-		"request": "^2.88.2"
+		"request-promise": "4.2.5"
 	},
 	"scripts": {}
 }
