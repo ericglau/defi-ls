@@ -591,11 +591,37 @@ async function getHoverMarkdownForAddress(address: string) {
 	let balance = await web3connection.eth.getBalance(address);
 	if (balance > 0) {
 		buf += "**Ether Balance**:\n\n"
-		    + "    " + web3.utils.fromWei(balance) + " ETH\n\n";
+		    + "    " + web3.utils.fromWei(balance) + " ETH";
 	}
 	
-	// Get token balances using Amberdata.io APIs
+	// Get ETH value and token balances using Amberdata.io APIs
 	if (amberdataApiKeySetting !== "") {
+
+		// ETH value and price
+		var options1 = {
+			method: 'GET',
+			url: 'https://web3api.io/api/v2/addresses/'+address+'/account-balances/latest',
+			qs: {includePrice: 'true', currency: 'usd'},
+			headers: {
+			  'x-amberdata-blockchain-id': 'ethereum-mainnet',
+			  'x-api-key': amberdataApiKeySetting
+			}
+		};
+
+		await request(options1, async function (error: string | undefined, response: any, body: any) {
+			if (error)
+				throw new Error(error);
+			var result = JSON.parse(body);
+			if (result !== undefined && result.payload !== undefined && result.payload.price !== undefined && result.payload.value !== undefined) {
+				var total = result.payload.price.value.total;
+				var quote = result.payload.price.value.quote;
+				buf += " ($" + Number(total).toFixed(2) + " USD @ $" + Number(quote).toFixed(2) + ")";
+			}
+		});
+
+		buf += "\n\n";
+
+		// Token balances, values and price
 		var options = {
 			method: 'GET',
 			url: 'https://web3api.io/api/v2/addresses/'+address+'/tokens',
