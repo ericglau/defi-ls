@@ -67,6 +67,7 @@ var Wallet = require('ethereumjs-wallet')
 var EthUtil = require('ethereumjs-util')
 const {indexOfRegex, lastIndexOfRegex} = require('index-of-regex')
 var request = require("request-promise")
+var BigNumber = require('big-number');
 
 // to be defined at runtime
 var web3provider: any;
@@ -593,6 +594,7 @@ async function getHoverMarkdownForAddress(address: string) {
 		    + "    " + web3.utils.fromWei(balance) + " ETH\n\n";
 	}
 	
+	// Get token balances using Amberdata.io APIs
 	if (amberdataApiKeySetting !== "") {
 		var options = {
 			method: 'GET',
@@ -629,20 +631,17 @@ async function getHoverMarkdownForAddress(address: string) {
 					};
 				}) => {
 					var symbol = element.symbol;
-					var amount = element.amount;
-					var decimals = element.decimals;
+					var amount = BigNumber(element.amount).divide(BigNumber(10).power(BigNumber(element.decimals)));
 					buf += "    " + amount + " " + symbol;
 					if (element.price != null) {
-						var quote = element.price.amount.quote;
-						var totalValue = element.price.amount.total;
-						buf += " (" + totalValue + " USD @ " + quote;
+						var quote = Number(element.price.amount.quote).toFixed(2);
+						var totalValue = Number(element.price.amount.total).toFixed(2);
+						buf += " ($" + totalValue + " USD @ $" + quote + ")";
 					}
 					buf += "\n\n";
 				});
 			}
 		});
-
-		connection.console.log("THE BUF" + buf);
 
 	}
 
