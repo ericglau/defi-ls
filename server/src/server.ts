@@ -636,9 +636,10 @@ async function getHoverMarkdownForAddress(address: string) {
 					if (element.price != null) {
 						var quote = Number(element.price.amount.quote).toFixed(2);
 						var totalValue = Number(element.price.amount.total).toFixed(2);
-						buf += " ($" + totalValue + " USD @ $" + quote + ")";
+						buf += " ($" + totalValue + " USD @ $" + quote + ") \n";
+					} else {
+						buf += " \n";
 					}
-					buf += "\n\n";
 				});
 			}
 		});
