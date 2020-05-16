@@ -609,8 +609,10 @@ async function getHoverMarkdownForAddress(address: string) {
 		};
 
 		await request(options1, async function (error: string | undefined, response: any, body: any) {
-			if (error)
-				throw new Error(error);
+			if (error) {
+				connection.console.log(error);
+				return;
+			}
 			var result = JSON.parse(body);
 			if (result !== undefined && result.payload !== undefined && result.payload.price !== undefined && result.payload.value !== undefined) {
 				var total = result.payload.price.value.total;
@@ -640,8 +642,10 @@ async function getHoverMarkdownForAddress(address: string) {
 		};
 	
 		await request(options, async function (error: string | undefined, response: any, body: any) {
-			if (error)
-				throw new Error(error);
+			if (error) {
+				connection.console.log(error);
+				return;
+			}
 			var result = JSON.parse(body);
 			if (result !== undefined && result.payload !== undefined && result.payload.records !== undefined && result.payload.records.length > 0) {
 				buf += "**Tokens**:\n\n";
