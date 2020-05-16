@@ -580,12 +580,13 @@ async function getHoverMarkdownForAddress(address: string) {
 	var web3connection = new Web3(web3provider);
 	let balance = await web3connection.eth.getBalance(address);
 	if (balance > 0) {
-		buf += "**Mainnet Balance**:\n\n"
-		    + "    " + web3.utils.fromWei(balance) + " ETH\n";
+		buf += "**Ether Balance**:\n\n"
+		    + "    " + web3.utils.fromWei(balance) + " ETH\n\n";
 	}
 	let tokenBalance = await getTokenBalance(address, "0x6b175474e89094c44da98b954eedeac495271d0f"); // DAI
 	if (tokenBalance > 0) {
-		buf += "    " + web3.utils.fromWei(tokenBalance) + " DAI\n\n";
+		buf += "**Tokens**:\n\n"
+		    + "    " + web3.utils.fromWei(tokenBalance) + " DAI\n\n";
 	}
 	return buf;
 }
