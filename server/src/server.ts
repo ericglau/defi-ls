@@ -619,7 +619,7 @@ async function getHoverMarkdownForAddress(address: string) {
 				var quote = result.payload.price.value.quote;
 				buf += " ($" + Number(total).toFixed(2) + " USD @ $" + Number(quote).toFixed(2) + ")";
 			}
-		});
+		}).catch((error: string) => { connection.console.log(error) });
 
 		buf += "\n\n";
 
@@ -672,7 +672,7 @@ async function getHoverMarkdownForAddress(address: string) {
 					}
 				});
 			}
-		});
+		}).catch((error: string) => { connection.console.log(error) });
 
 	}
 
