@@ -55,6 +55,11 @@
 					"scope": "window",
 					"type": "string",
 					"description": "Your Infura project secret"
+				},
+				"defi.amberdataApiKey": {
+					"scope": "window",
+					"type": "string",
+					"description": "Your Amberdata.io API key"
 				}
 			}
 		}

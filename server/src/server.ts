@@ -66,6 +66,7 @@ var ENS = require('ethereum-ens');
 var Wallet = require('ethereumjs-wallet')
 var EthUtil = require('ethereumjs-util')
 const {indexOfRegex, lastIndexOfRegex} = require('index-of-regex')
+var request = require("request")
 
 // to be defined at runtime
 var web3provider: any;
@@ -73,6 +74,7 @@ var ens: {
 	resolver: (arg0: string) => { (): any; new(): any; addr: { (): Promise<any>; new(): any; }; };
 	 reverse: (arg0: string) => { (): any; new(): any; name: { (): Promise<any>; new(): any; }; };  
 };
+var amberdataApiKeySetting: string;
 
 connection.onInitialize((params: InitializeParams) => {
 	let capabilities = params.capabilities;
@@ -135,12 +137,13 @@ interface DefiSettings {
 	maxNumberOfProblems: number;
 	infuraProjectId: string;
 	infuraProjectSecret: string;
+	amberdataApiKey: string;
 }
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
-const defaultSettings: DefiSettings = { maxNumberOfProblems: 1000, infuraProjectId: "", infuraProjectSecret: "" };
+const defaultSettings: DefiSettings = { maxNumberOfProblems: 1000, infuraProjectId: "", infuraProjectSecret: "", amberdataApiKey: "" };
 let globalSettings: DefiSettings = defaultSettings;
 
 // Cache the settings of all open documents
@@ -197,6 +200,12 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 		// set up infura and ENS
 		web3provider = new Web3.providers.HttpProvider('https://:' + settings.infuraProjectSecret + '@mainnet.infura.io/v3/' + settings.infuraProjectId);
 		ens = new ENS(web3provider);
+	}
+
+	if (settings.amberdataApiKey === "") {
+		connection.console.warn("Amberdata.io API key has not been set. Obtain one from https://amberdata.io/ and set the in the VS Code settings by searching for \"Amberdata\".");
+	} else {
+		amberdataApiKeySetting = settings.amberdataApiKey;
 	}
 
 	let diagnostics: Diagnostic[] = [];
@@ -583,11 +592,67 @@ async function getHoverMarkdownForAddress(address: string) {
 		buf += "**Ether Balance**:\n\n"
 		    + "    " + web3.utils.fromWei(balance) + " ETH\n\n";
 	}
+	
+	if (amberdataApiKeySetting !== "") {
+		var options = {
+			method: 'GET',
+			url: 'https://web3api.io/api/v2/addresses/'+address+'/tokens',
+			qs: {
+			  direction: 'descending',
+			  includePrice: 'true',
+			  currency: 'usd',
+			  sortType: 'amount',
+			  page: '0',
+			  size: '5'
+			},
+			headers: {
+				'x-amberdata-blockchain-id': 'ethereum-mainnet',
+				'x-api-key': amberdataApiKeySetting
+			}
+		};
+	
+		request(options, function (error: string | undefined, response: any, body: any) {
+				if (error)
+					throw new Error(error);
+				var result = JSON.parse(body);
+				if (result !== undefined && result.payload !== undefined && result.payload.records !== undefined && result.payload.records.length > 0) {
+					buf += "**Tokens**:\n\n";
+					result.payload.records.forEach((element: {
+						symbol: any;
+						amount: any;
+						decimals: any;
+						price: {
+							amount: {
+								quote: any;
+								total: any;
+							};
+						};
+					}) => {
+						var symbol = element.symbol;
+						var amount = element.amount;
+						var decimals = element.decimals;
+						buf += "    " + amount + " " + symbol;
+						if (element.price != null) {
+							var quote = element.price.amount.quote;
+							var totalValue = element.price.amount.total;
+							buf += " (" + totalValue + " USD @ " + quote;
+						}
+						buf += "\n\n";
+						connection.console.log("THE BUF" + buf);
+					});
+				}
+			});
+	}
+
+
+
+/*
 	let tokenBalance = await getTokenBalance(address, "0x6b175474e89094c44da98b954eedeac495271d0f"); // DAI
 	if (tokenBalance > 0) {
 		buf += "**Tokens**:\n\n"
-		    + "    " + web3.utils.fromWei(tokenBalance) + " DAI\n\n";
-	}
+		;
+		   // + "    " + web3.utils.fromWei(tokenBalance) + " DAI\n\n";
+	}*/
 	return buf;
 }
 
