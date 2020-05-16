@@ -611,37 +611,39 @@ async function getHoverMarkdownForAddress(address: string) {
 			}
 		};
 	
-		request(options, function (error: string | undefined, response: any, body: any) {
-				if (error)
-					throw new Error(error);
-				var result = JSON.parse(body);
-				if (result !== undefined && result.payload !== undefined && result.payload.records !== undefined && result.payload.records.length > 0) {
-					buf += "**Tokens**:\n\n";
-					result.payload.records.forEach((element: {
-						symbol: any;
-						amount: any;
-						decimals: any;
-						price: {
-							amount: {
-								quote: any;
-								total: any;
-							};
+		request(options, async function (error: string | undefined, response: any, body: any) {
+			if (error)
+				throw new Error(error);
+			var result = JSON.parse(body);
+			if (result !== undefined && result.payload !== undefined && result.payload.records !== undefined && result.payload.records.length > 0) {
+				buf += "**Tokens**:\n\n";
+				result.payload.records.forEach((element: {
+					symbol: any;
+					amount: any;
+					decimals: any;
+					price: {
+						amount: {
+							quote: any;
+							total: any;
 						};
-					}) => {
-						var symbol = element.symbol;
-						var amount = element.amount;
-						var decimals = element.decimals;
-						buf += "    " + amount + " " + symbol;
-						if (element.price != null) {
-							var quote = element.price.amount.quote;
-							var totalValue = element.price.amount.total;
-							buf += " (" + totalValue + " USD @ " + quote;
-						}
-						buf += "\n\n";
-						connection.console.log("THE BUF" + buf);
-					});
-				}
-			});
+					};
+				}) => {
+					var symbol = element.symbol;
+					var amount = element.amount;
+					var decimals = element.decimals;
+					buf += "    " + amount + " " + symbol;
+					if (element.price != null) {
+						var quote = element.price.amount.quote;
+						var totalValue = element.price.amount.total;
+						buf += " (" + totalValue + " USD @ " + quote;
+					}
+					buf += "\n\n";
+				});
+			}
+		});
+
+		connection.console.log("THE BUF" + buf);
+
 	}
 
 
