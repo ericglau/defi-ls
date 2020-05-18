@@ -333,7 +333,7 @@ connection.onCompletion(
 					start: _textDocumentPosition.position,
 					end: _textDocumentPosition.position
 				},  
-				newText: token.address				
+				newText: token.address
 			};
 			let completionItem : CompletionItem = 
 			{
@@ -373,7 +373,7 @@ export interface StringLocation {
 }
 
 function getMarkdownForToken(token: Token): string {
-	var buf = `**${token.name} (${token.symbol})**\n\n` +
+	var buf = `**Token: ${token.name} (${token.symbol})**\n\n` +
 		`**Price:** \$${Number(token.price).toFixed(2)} USD  \n` +
 		`**Market Cap:** \$${Number(token.marketCap).toFixed(2)} USD  \n` +
 		`**Total Supply:** ${Number(token.totalSupply).toFixed(0)}  \n`;
@@ -712,8 +712,7 @@ async function getMarkdownForTokenAddress(address: string) {
 }
 
 async function getMarkdownForRegularAddress(address: string) {
-	let buf: MarkedString = "**[Ethereum]**\n\n"
-		+ "**Address**: " + address + "\n\n";
+	let buf: MarkedString = "**Ethereum Address**: " + address + "\n\n";
 	// reverse ENS lookup
 	let ensName: string = await reverseENSLookup(address);
 	if (ensName != "") {
