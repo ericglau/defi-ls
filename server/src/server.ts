@@ -278,7 +278,7 @@ export interface Token {
 	price: string;
 	totalSupply: string;
 	tradeVolume: string;
-	uniqueAddresses: string;
+	uniqueAddresses: string | undefined;
 }
 
 async function getTopTokens() {
@@ -359,12 +359,7 @@ connection.onCompletionResolve(
 			let markdown : MarkupContent = {
 				kind: MarkupKind.Markdown,
 				value: 
-					`**${token.name} (${token.symbol})**\n\n` +
-					`**Price:** \$${Number(token.price).toFixed(2)} USD  \n` +
-					`**Market Cap:** \$${Number(token.marketCap).toFixed(2)} USD  \n` + 
-					`**Total Supply:** ${Number(token.totalSupply).toFixed(0)}  \n` +
-					`**Unique Addresses (Daily):** ${Number(token.uniqueAddresses).toFixed(0)}  \n` +
-					`**Trading Volume (Daily):** \$${Number(token.tradeVolume).toFixed(2)} USD  \n`
+					getMarkdownForToken(token)
 			};
 			item.documentation = markdown;
 		}
@@ -375,6 +370,18 @@ connection.onCompletionResolve(
 export interface StringLocation {
     range: Range;
     content: string;
+}
+
+function getMarkdownForToken(token: Token): string {
+	var buf = `**${token.name} (${token.symbol})**\n\n` +
+		`**Price:** \$${Number(token.price).toFixed(2)} USD  \n` +
+		`**Market Cap:** \$${Number(token.marketCap).toFixed(2)} USD  \n` +
+		`**Total Supply:** ${Number(token.totalSupply).toFixed(0)}  \n`;
+	if (token.uniqueAddresses !== undefined) {
+		buf += `**Unique Addresses (Daily):** ${Number(token.uniqueAddresses).toFixed(0)}  \n`;
+	}
+	buf += `**Trading Volume (Daily):** \$${Number(token.tradeVolume).toFixed(2)} USD  \n`;
+	return buf;
 }
 
 // find all possible Ethereum addresses
@@ -655,6 +662,56 @@ connection.onHover(
 );
 
 async function getHoverMarkdownForAddress(address: string) {
+	var result = await getMarkdownForTokenAddress(address)
+	if (result === "") {
+		result = await getMarkdownForRegularAddress(address)
+	}
+	return result;
+}
+
+async function getToken(address: string) {
+	let token : Token | undefined = undefined;
+	if (amberdataApiKeySetting !== "") {
+		// Get top tokens by marketcap
+		var options = {
+			method: 'GET',
+			url: 'https://web3api.io/api/v2/market/tokens/prices/'+address+'/latest',
+			headers: {'x-api-key': amberdataApiKeySetting}
+		};
+
+		await request(options, async function (error: string | undefined, response: any, body: any) {
+			if (error) {
+				connection.console.log(error);
+				return;
+			}
+			var result = JSON.parse(body);
+			if (result !== undefined && result.payload !== undefined && result.payload.length > 0 && result.payload[0] !== undefined) {
+				let element = result.payload[0];
+				token = {
+					name: element.name,
+					symbol: element.symbol,
+					address: element.address,
+					marketCap: element.marketCapUSD,
+					price: element.priceUSD,
+					totalSupply: element.totalSupply,
+					tradeVolume: element.dailyVolumeUSD,
+					uniqueAddresses: element.uniqueAddresses
+				}
+			}
+		}).catch((error: string) => { connection.console.log(error) });
+	}
+	return token;
+}
+
+async function getMarkdownForTokenAddress(address: string) {
+	let token : Token | undefined = await getToken(address);
+	if (token !== undefined) {
+		return getMarkdownForToken(token);
+	}
+	return "";
+}
+
+async function getMarkdownForRegularAddress(address: string) {
 	let buf: MarkedString = "**[Ethereum]**\n\n"
 		+ "**Address**: " + address + "\n\n";
 	// reverse ENS lookup
