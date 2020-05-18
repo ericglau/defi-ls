@@ -333,7 +333,7 @@ connection.onCompletion(
 					start: _textDocumentPosition.position,
 					end: _textDocumentPosition.position
 				},  
-				newText: token.address
+				newText: getChecksumAddress(token.address)
 			};
 			let completionItem : CompletionItem = 
 			{
@@ -348,6 +348,15 @@ connection.onCompletion(
 		return completionItems;
 	}
 );
+
+function getChecksumAddress(address: string) {
+	try {
+		return web3.utils.toChecksumAddress(address)
+	} catch(e) {
+		connection.console.log(e)
+		return address;
+	}
+}
 
 // This handler resolves additional information for the item selected in
 // the completion list.
