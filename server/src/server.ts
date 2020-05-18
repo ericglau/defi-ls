@@ -522,14 +522,16 @@ connection.onCodeLensResolve(
 			if (ensName != "") {
 				prefix += ensName + " | ";
 			}
+			let isToken : boolean = false;
 			if (token !== undefined) {
+				isToken = true;
 				prefix += getTokenName(token) + " | ";
 			}
 
 			if (codeLensType === CODE_LENS_TYPE_ETH_ADDRESS) {
-				codeLens.command = Command.create(prefix + "Ethereum address (mainnet): " + address, "etherscan.show.url", "https://etherscan.io/address/" + address);
+				codeLens.command = Command.create(prefix + "Ethereum " + (isToken?"token":"address") + " (mainnet): " + address, "etherscan.show.url", "https://etherscan.io/address/" + address);
 			} else if (codeLensType === CODE_LENS_TYPE_ETH_PRIVATE_KEY) {
-				codeLens.command = Command.create(prefix + "Private key with Ethereum address (mainnet): " + address, "etherscan.show.url", "https://etherscan.io/address/" + address);
+				codeLens.command = Command.create(prefix + "Private key for Ethereum " + (isToken?"token":"address") + " (mainnet): " + address, "etherscan.show.url", "https://etherscan.io/address/" + address);
 			}	
 		} else if (network === ROPSTEN) {
 			codeLens.command = Command.create("(ropsten)", "etherscan.show.url", "https://ropsten.etherscan.io/address/" + address);
