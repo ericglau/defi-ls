@@ -49,6 +49,7 @@ const NAME: string = 'DeFi Language Support';
 
 const DIAGNOSTIC_TYPE_NOT_VALID_ADDRESS: string = 'NotValidAddress';
 const DIAGNOSTIC_TYPE_NOT_CHECKSUM_ADDRESS: string = 'NotChecksumAddress';
+const DIAGNOSTIC_TYPE_CONVERT_ENS_NAME: string = 'ConvertENSName';
 
 const CODE_LENS_TYPE_ETH_ADDRESS: string = 'EthAddress';
 const CODE_LENS_TYPE_ETH_PRIVATE_KEY: string = 'EthPrivateKey';
@@ -213,7 +214,8 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
 	let possibleEthereumAddresses : StringLocation[] = findPossibleEthereumAddresses(textDocument);
 	let problems = 0;
-	possibleEthereumAddresses.forEach( (element) => {
+	for (var i = 0; i < possibleEthereumAddresses.length; i++) {
+		let element : StringLocation = possibleEthereumAddresses[i];
 		if (problems < settings.maxNumberOfProblems) {
 			problems++;
 			if (!isValidEthereumAddress(element.content)) {
@@ -223,11 +225,17 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 				// Not a checksum address
 				var checksumAddress = web3.utils.toChecksumAddress(element.content);
 				if (element.content != checksumAddress) {
-					addDiagnostic(element, `${element.content} is not a checksum address`, 'Use a checksum address as a best practice to ensure the address is valid.', DiagnosticSeverity.Warning, DIAGNOSTIC_TYPE_NOT_CHECKSUM_ADDRESS);
+					addDiagnostic(element, `${element.content} is not a checksum address`, 'Use a checksum address as a best practice to ensure the address is valid.', DiagnosticSeverity.Warning, DIAGNOSTIC_TYPE_NOT_CHECKSUM_ADDRESS + checksumAddress);
+				}
+
+				// Hint to convert to ENS name
+				let ensName : string = await reverseENSLookup(element.content);
+				if (ensName !== "") {
+					addDiagnostic(element, `${element.content} can be converted to its ENS name \"${ensName}\"`, 'Convert the Ethereum address to its ENS name for better readability.', DiagnosticSeverity.Hint, DIAGNOSTIC_TYPE_CONVERT_ENS_NAME + ensName);
 				}
 			}
 		}
-	});
+	}
 
 	// Send the computed diagnostics to VSCode.
 	connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
@@ -466,7 +474,7 @@ connection.onCodeAction(
 		let context : CodeActionContext = _params.context;
 		let diagnostics : Diagnostic[] = context.diagnostics;
 
-		codeActions = getQuickFixes(diagnostics, textDocument, _params);
+		codeActions = getCodeActions(diagnostics, textDocument, _params);
 
 		return codeActions;
 	}
@@ -503,16 +511,24 @@ async function ENSLookup(name: string) {
 	return result;
 }
 
-function getQuickFixes(diagnostics: Diagnostic[], textDocument: TextDocument, params: CodeActionParams) : CodeAction[] {
+function getCodeActions(diagnostics: Diagnostic[], textDocument: TextDocument, params: CodeActionParams) : CodeAction[] {
 	let codeActions : CodeAction[] = [];
+
+	// Get quick fixes for each diagnostic
 	diagnostics.forEach( (diagnostic) => {
-		if (diagnostic.code === DIAGNOSTIC_TYPE_NOT_CHECKSUM_ADDRESS) {
+		if (String(diagnostic.code).startsWith(DIAGNOSTIC_TYPE_NOT_CHECKSUM_ADDRESS)) {
 			let title : string = "Convert to checksum address";
 			let range : Range = diagnostic.range;
-			let replacement : string = web3.utils.toChecksumAddress(textDocument.getText(range));
+			let replacement : string = String(diagnostic.code).substring(DIAGNOSTIC_TYPE_NOT_CHECKSUM_ADDRESS.length);
+			codeActions.push(getQuickFix(diagnostic, title, range, replacement, textDocument));
+		} else if (String(diagnostic.code).startsWith(DIAGNOSTIC_TYPE_CONVERT_ENS_NAME)) {
+			let replacement : string = String(diagnostic.code).substring(DIAGNOSTIC_TYPE_CONVERT_ENS_NAME.length);
+			let title : string = `Convert to ENS name \"${replacement}\"`;
+			let range : Range = diagnostic.range;
 			codeActions.push(getQuickFix(diagnostic, title, range, replacement, textDocument));
 		}
 	});
+
 	return codeActions;
 }
 
