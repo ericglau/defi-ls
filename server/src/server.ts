@@ -515,11 +515,17 @@ connection.onCodeLensResolve(
 		if (network === MAINNET) {
 			// reverse ENS lookup
 			let ensName : string = await reverseENSLookup(address);
+			// token lookup
+			let token : Token | undefined = await getToken(address);
 			
 			let prefix = "";
 			if (ensName != "") {
-				prefix = ensName + " | "
+				prefix += ensName + " | ";
 			}
+			if (token !== undefined) {
+				prefix += getTokenName(token) + " | ";
+			}
+
 			if (codeLensType === CODE_LENS_TYPE_ETH_ADDRESS) {
 				codeLens.command = Command.create(prefix + "Ethereum address (mainnet): " + address, "etherscan.show.url", "https://etherscan.io/address/" + address);
 			} else if (codeLensType === CODE_LENS_TYPE_ETH_PRIVATE_KEY) {
@@ -537,6 +543,10 @@ connection.onCodeLensResolve(
 		return codeLens;
 	}
 );
+
+function getTokenName(token : Token) {
+	return `${token.name} (${token.symbol})`;
+}
 
 connection.onCodeAction(
 	(_params: CodeActionParams): CodeAction[] => {
