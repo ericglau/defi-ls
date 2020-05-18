@@ -26,7 +26,9 @@ import {
 	WorkspaceEdit,
 	HoverParams,
 	Hover,
-	MarkedString
+	MarkedString,
+	MarkupContent,
+	MarkupKind
 } from 'vscode-languageserver';
 
 import {
@@ -268,33 +270,82 @@ connection.onDidChangeWatchedFiles(_change => {
 	connection.console.log('We received an file change event');
 });
 
+export interface Token {
+	name: string;
+	symbol: string;
+	address: string;
+	marketCap: string;
+	price: string;
+	totalSupply: string;
+	tradeVolume: string;
+	uniqueAddresses: string;
+}
+
+async function getTopTokens() {
+	let tokens : Token[] = []
+	if (amberdataApiKeySetting !== "") {
+		// Get top tokens by marketcap
+		var options = {
+			method: 'GET',
+			url: 'https://web3api.io/api/v2/tokens/rankings',
+			qs: {direction: 'descending', sortType: 'marketCap', timeInterval: 'days'},
+			headers: {'x-api-key': amberdataApiKeySetting}
+		  };
+
+		await request(options, async function (error: string | undefined, response: any, body: any) {
+			if (error) {
+				connection.console.log(error);
+				return;
+			}
+			var result = JSON.parse(body);
+			if (result !== undefined && result.payload !== undefined && result.payload.data !== undefined && result.payload.data.length > 0) {
+				result.payload.data.forEach((element: { name: any; symbol: any; address: any; marketCap: any; currentPrice: any; totalSupply: any; tradeVolume: any; uniqueAddresses: any}) => {
+					let token : Token = {
+						name: element.name,
+						symbol: element.symbol,
+						address: element.address,
+						marketCap: element.marketCap,
+						price: element.currentPrice,
+						totalSupply: element.totalSupply,
+						tradeVolume: element.tradeVolume,
+						uniqueAddresses: element.uniqueAddresses
+					}
+					tokens.push(token)
+				});
+			}
+		}).catch((error: string) => { connection.console.log(error) });
+	}
+	return tokens;
+}
+
 // This handler provides the initial list of the completion items.
 connection.onCompletion(
-	(_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
-		// The pass parameter contains the position of the text document in
-		// which code complete got requested. For the example we ignore this
-		// info and always provide the same completion items.
+	async (_textDocumentPosition: TextDocumentPositionParams): Promise<CompletionItem[]> => {
+		// The passed parameter contains the position of the text document in
+		// which code complete got requested.
 
-		let textEdit : TextEdit = { 
-			range: {
-				start: _textDocumentPosition.position,
-				end: _textDocumentPosition.position
-			},
-			newText: "vitalik.eth"
-		};
-		return [
+		let tokens : Token[] = await getTopTokens();
+		let completionItems : CompletionItem[] = [];
+		for (var i=0; i<tokens.length; i++) {
+			let token = tokens[i];
+			let textEdit : TextEdit = { 
+				range: {
+					start: _textDocumentPosition.position,
+					end: _textDocumentPosition.position
+				},  
+				newText: token.address				
+			};
+			let completionItem : CompletionItem = 
 			{
-				label: 'ENS',
-				kind: CompletionItemKind.Text,
-				data: 1,
+				label: `Token: ${token.name} (${token.symbol})`,
+				kind: CompletionItemKind.Value,
+				data: token,
 				textEdit: textEdit
-			},
-			{
-				label: 'JavaScript',
-				kind: CompletionItemKind.Text,
-				data: 2
-			}
-		];
+			}			
+			completionItems.push(completionItem);
+		}
+
+		return completionItems;
 	}
 );
 
@@ -302,12 +353,20 @@ connection.onCompletion(
 // the completion list.
 connection.onCompletionResolve(
 	(item: CompletionItem): CompletionItem => {
-		if (item.data === 1) {
-			item.detail = 'vitalik.eth';
-			item.documentation = '0xd8da6bf26964af9d7eed9e03e53415d37aa96045';
-		} else if (item.data === 2) {
-			item.detail = 'JavaScript details';
-			item.documentation = 'JavaScript documentation';
+		if (<Token>item.data !== undefined) {
+			let token : Token = item.data;
+			item.detail = `${token.address}`;
+			let markdown : MarkupContent = {
+				kind: MarkupKind.Markdown,
+				value: 
+					`**${token.name} (${token.symbol})**\n\n` +
+					`**Price:** \$${Number(token.price).toFixed(2)} USD  \n` +
+					`**Market Cap:** \$${Number(token.marketCap).toFixed(2)} USD  \n` + 
+					`**Total Supply:** ${Number(token.totalSupply).toFixed(0)}  \n` +
+					`**Unique Addresses (Daily):** ${Number(token.uniqueAddresses).toFixed(0)}  \n` +
+					`**Trading Volume (Daily):** \$${Number(token.tradeVolume).toFixed(2)} USD  \n`
+			};
+			item.documentation = markdown;
 		}
 		return item;
 	}
