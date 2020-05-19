@@ -324,8 +324,10 @@ connection.onCompletion(
 		// The passed parameter contains the position of the text document in
 		// which code complete got requested.
 
-		let tokens : Token[] = await getTopTokens();
 		let completionItems : CompletionItem[] = [];
+
+		// Token completion items
+		let tokens : Token[] = await getTopTokens();
 		for (var i=0; i<tokens.length; i++) {
 			let token = tokens[i];
 			let textEdit : TextEdit = { 
@@ -344,6 +346,43 @@ connection.onCompletion(
 			}			
 			completionItems.push(completionItem);
 		}
+
+		// Snippets
+		// Uniswap trade
+		{
+			let uniswapTrade : string = 
+			"const HOT = new Token(ChainId.MAINNET, '0xc0FFee0000000000000000000000000000000000', 18, 'HOT', 'Caffeine')\n"+
+			"const NOT = new Token(ChainId.MAINNET, '0xDeCAf00000000000000000000000000000000000', 18, 'NOT', 'Caffeine')\n"+
+			"const HOT_NOT = new Pair(new TokenAmount(HOT, '2000000000000000000'), new TokenAmount(NOT, '1000000000000000000'))\n"+
+			"const NOT_TO_HOT = new Route([HOT_NOT], NOT)\n"+
+			"\n"+
+			"const trade = new Trade(NOT_TO_HOT, new TokenAmount(NOT, '1000000000000000'), TradeType.EXACT_INPUT)\n";
+			let textEdit : TextEdit = { 
+				range: {
+					start: _textDocumentPosition.position,
+					end: _textDocumentPosition.position
+				},  
+				newText: uniswapTrade
+			};
+			let additionalTextEdit : TextEdit = { 
+				range: {
+					start: { line: 0, character: 0 },
+					end: { line: 0, character: 0 }
+				},  
+				newText: "import { ChainId, Token, TokenAmount, Pair, TradeType, Route } from '@uniswap/sdk'\n"
+			};
+			let completionItem : CompletionItem = 
+			{
+				label: `DeFi Snippet: Uniswap v2 trade`,
+				kind: CompletionItemKind.Snippet,
+				data: undefined,
+				textEdit: textEdit,
+				additionalTextEdits: [additionalTextEdit]
+			}			
+			completionItems.push(completionItem);
+		}
+
+
 
 		return completionItems;
 	}
