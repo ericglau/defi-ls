@@ -593,7 +593,9 @@ async function ENSLookup(name: string) {
 	let result = "";
 	await ens.resolver(name).addr().then(function (addr: string) {
 		connection.console.log("ENS resolved address is " + addr);
-		result = addr;
+		if (addr != "0x0000000000000000000000000000000000000000") {
+			result = addr;
+		}
 	}).catch(e => connection.console.log("Could not do lookup ENS address for resolved name " + name + " due to error: " + e));
 	return result;
 }
