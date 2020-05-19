@@ -294,7 +294,7 @@ async function getTopTokens() {
 
 		await request(options, async function (error: string | undefined, response: any, body: any) {
 			if (error) {
-				connection.console.log(error);
+				connection.console.log("Request error getting top tokens: " + error);
 				return;
 			}
 			var result = JSON.parse(body);
@@ -313,7 +313,7 @@ async function getTopTokens() {
 					tokens.push(token)
 				});
 			}
-		}).catch((error: string) => { connection.console.log(error) });
+		}).catch((error: string) => { connection.console.log("Error getting top tokens: " + error) });
 	}
 	return tokens;
 }
@@ -353,7 +353,7 @@ function getChecksumAddress(address: string) {
 	try {
 		return web3.utils.toChecksumAddress(address)
 	} catch(e) {
-		connection.console.log(e)
+		connection.console.log("Error getting checksum address: " + e);
 		return address;
 	}
 }
@@ -440,16 +440,11 @@ function findPossiblePrivateKeys(textDocument: TextDocument) : StringLocation[] 
 
 function isPrivateKey(possiblePrivateKey: string) {
 	try {
-		connection.console.log(`string is ` + possiblePrivateKey);
 		var privateKeyBuffer = EthUtil.toBuffer(possiblePrivateKey)
 		Wallet.fromPrivateKey(privateKeyBuffer)
-		//new ethers.Wallet(possiblePrivateKey)
 	} catch(e) {
-		connection.console.log("return false");
-		connection.console.log(e);
 		return false;
 	}
-	connection.console.log("return true");
 	return true;
 }
 
@@ -574,17 +569,8 @@ async function reverseENSLookup(address: string) {
 		// then forward ENS lookup to validate
 		let addr = await ENSLookup(name);
 		if (web3.utils.toChecksumAddress(address) == web3.utils.toChecksumAddress(addr)) {
-			connection.console.log("The names match!");
 			result = name;
 		}
-/*		await ens.resolver(name).addr().then(function (addr: string) {
-			connection.console.log("Original address is " + address);
-			connection.console.log("ENS resolved address is " + addr);
-			if (web3.utils.toChecksumAddress(address) == web3.utils.toChecksumAddress(addr)) {
-				connection.console.log("The names match!");
-				result = name;
-			}
-		}).catch(e => connection.console.log("Could not lookup ENS address for resolved name " + name + " due to error: " + e));*/
 	}).catch(e => connection.console.log("Could not reverse lookup ENS name for " + address + " due to error: " + e));
 	return result;
 }
@@ -658,7 +644,6 @@ connection.onHover(
 			var text = textDocument.getText({ start, end });
 			var index = textDocument.offsetAt(position) - textDocument.offsetAt(start);
 			var word = getWord(text, index);
-			connection.console.log("Found hover word " + word);
 
 			let buf : MarkedString = "";
 			if (isValidEthereumAddress(word)) {
@@ -704,7 +689,7 @@ async function getToken(address: string) {
 
 		await request(options, async function (error: string | undefined, response: any, body: any) {
 			if (error) {
-				connection.console.log(error);
+				connection.console.log("Request error while getting token: " + error);
 				return;
 			}
 			var result = JSON.parse(body);
@@ -721,7 +706,7 @@ async function getToken(address: string) {
 					uniqueAddresses: element.uniqueAddresses
 				}
 			}
-		}).catch((error: string) => { connection.console.log(error) });
+		}).catch((error: string) => { connection.console.log("Error getting token: " + error) });
 	}
 	return token;
 }
@@ -764,7 +749,7 @@ async function getMarkdownForRegularAddress(address: string) {
 
 		await request(options1, async function (error: string | undefined, response: any, body: any) {
 			if (error) {
-				connection.console.log(error);
+				connection.console.log("Request error getting ETH balance: " + error);
 				return;
 			}
 			var result = JSON.parse(body);
@@ -773,7 +758,7 @@ async function getMarkdownForRegularAddress(address: string) {
 				var quote = result.payload.price.value.quote;
 				buf += " ($" + Number(total).toFixed(2) + " USD @ $" + Number(quote).toFixed(2) + ")";
 			}
-		}).catch((error: string) => { connection.console.log(error) });
+		}).catch((error: string) => { connection.console.log("Error getting ETH balance: " + error) });
 
 		buf += "\n\n";
 
@@ -797,7 +782,7 @@ async function getMarkdownForRegularAddress(address: string) {
 	
 		await request(options, async function (error: string | undefined, response: any, body: any) {
 			if (error) {
-				connection.console.log(error);
+				connection.console.log("Request error getting token balances: " + error);
 				return;
 			}
 			var result = JSON.parse(body);
@@ -826,19 +811,9 @@ async function getMarkdownForRegularAddress(address: string) {
 					}
 				});
 			}
-		}).catch((error: string) => { connection.console.log(error) });
+		}).catch((error: string) => { connection.console.log("Error getting token balances: " + error) });
 
 	}
-
-
-
-/*
-	let tokenBalance = await getTokenBalance(address, "0x6b175474e89094c44da98b954eedeac495271d0f"); // DAI
-	if (tokenBalance > 0) {
-		buf += "**Tokens**:\n\n"
-		;
-		   // + "    " + web3.utils.fromWei(tokenBalance) + " DAI\n\n";
-	}*/
 	return buf;
 }
 
@@ -873,18 +848,12 @@ async function getTokenBalance(walletAddress:string, tokenAddress:string) {
 }
 
 function getWord(text: string, index: number) {
-	connection.console.log("orig string " + text);
 	var beginSubstring = text.substring(0, index);
-	connection.console.log("begin substring " + beginSubstring);
 
 	var endSubstring = text.substring(index, text.length);
-	connection.console.log("end  substring " + endSubstring);
 	var boundaryRegex = /[^0-9a-zA-Z.]{1}/g; // boundaries are: not alphanumeric or dot
     var first = lastIndexOfRegex(beginSubstring, boundaryRegex) + 1;
-	connection.console.log("first " + first);
-
 	var last = index + indexOfRegex(endSubstring, boundaryRegex);
-	connection.console.log("last " + last);
 
 	return text.substring(first !== -1 ? first : 0, last !== -1 ? last : text.length - 1);
 }
