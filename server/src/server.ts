@@ -381,6 +381,41 @@ connection.onCompletion(
 			}			
 			completionItems.push(completionItem);
 		}
+		// pTokens
+		{
+			let pTokens : string = 
+			"const ptokens = new pTokens({\n"+
+			"	pbtc: {\n"+
+			"	  ethPrivateKey: 'Eth private key',\n"+
+			"	  ethProvider: 'Eth provider',\n"+
+			"	  btcNetwork: 'testnet',  //'testnet' or 'bitcoin', default 'testnet'\n"+
+			"	  defaultEndpoint: 'https://......' //optional\n"+
+			"	}\n"+
+			"  })\n";
+			let textEdit : TextEdit = { 
+				range: {
+					start: _textDocumentPosition.position,
+					end: _textDocumentPosition.position
+				},  
+				newText: pTokens
+			};
+			let additionalTextEdit : TextEdit = { 
+				range: {
+					start: { line: 0, character: 0 },
+					end: { line: 0, character: 0 }
+				},  
+				newText: "import pTokens from 'ptokens'\n"
+			};
+			let completionItem : CompletionItem = 
+			{
+				label: `DeFi Snippet: pTokens`,
+				kind: CompletionItemKind.Snippet,
+				data: undefined,
+				textEdit: textEdit,
+				additionalTextEdits: [additionalTextEdit]
+			}			
+			completionItems.push(completionItem);
+		}
 
 
 
