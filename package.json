@@ -46,7 +46,7 @@
 						"verbose"
 					],
 					"default": "off",
-					"description": "Traces the communication between VS Code and the language server."
+					"description": "Traces the communication between VS Code and the Ethereum DeFi language server."
 				},
 				"defi.infuraProjectId": {
 					"scope": "window",
