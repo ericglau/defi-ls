@@ -662,9 +662,7 @@ connection.onCodeLens(
 			let possibleEnsNames : StringLocation[] = findPossibleENSNames(textDocument);
 			for (let i = 0; i < possibleEnsNames.length; i++) {
 				let element : StringLocation = possibleEnsNames[i];
-				connection.console.log("FOR EACH POSSIBLDE ENS NAME " + element.content)
 				let ensAddress : string = await ENSLookup(element.content);
-				connection.console.log("ENS STTRING " + ensAddress)
 				if (ensAddress !== "") {
 					pushEthereumAddressCodeLenses(CODE_LENS_TYPE_ETH_ADDRESS, element.range, ensAddress, codeLenses);
 				}
