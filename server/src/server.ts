@@ -55,7 +55,8 @@ const NAME: string = 'DeFi Language Support';
 
 const DIAGNOSTIC_TYPE_NOT_VALID_ADDRESS: string = 'NotValidAddress';
 const DIAGNOSTIC_TYPE_NOT_CHECKSUM_ADDRESS: string = 'NotChecksumAddress';
-const DIAGNOSTIC_TYPE_CONVERT_ENS_NAME: string = 'ConvertENSName';
+const DIAGNOSTIC_TYPE_CONVERT_TO_ENS_NAME: string = 'ConvertENSName';
+const DIAGNOSTIC_TYPE_CONVERT_FROM_ENS_NAME: string = 'ConvertFromENSName';
 
 const CODE_LENS_TYPE_ETH_ADDRESS: string = 'EthAddress';
 const CODE_LENS_TYPE_ETH_PRIVATE_KEY: string = 'EthPrivateKey';
@@ -240,8 +241,21 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 				// Hint to convert to ENS name
 				let ensName : string = await reverseENSLookup(element.content);
 				if (ensName !== "") {
-					addDiagnostic(element, `${element.content} can be converted to its ENS name \"${ensName}\"`, 'Convert the Ethereum address to its ENS name for better readability.', DiagnosticSeverity.Hint, DIAGNOSTIC_TYPE_CONVERT_ENS_NAME + ensName);
+					addDiagnostic(element, `${element.content} can be converted to its ENS name \"${ensName}\"`, 'Convert the Ethereum address to its ENS name.', DiagnosticSeverity.Hint, DIAGNOSTIC_TYPE_CONVERT_TO_ENS_NAME + ensName);
 				}
+			}
+		}
+	}
+
+	let possibleEnsNames : StringLocation[] = findPossibleENSNames(textDocument);
+	for (var i = 0; i < possibleEnsNames.length; i++) {
+		let element : StringLocation = possibleEnsNames[i];
+		if (problems < settings.maxNumberOfProblems) {
+			// Hint to convert to Ethereum address
+			let ensAddress : string = await ENSLookup(element.content);
+			if (ensAddress !== "") {
+				problems++;
+				addDiagnostic(element, `${element.content} can be converted to its Ethereum address`, 'Convert the ENS name to its Ethereum address.', DiagnosticSeverity.Hint, DIAGNOSTIC_TYPE_CONVERT_FROM_ENS_NAME + ensAddress);
 			}
 		}
 	}
@@ -582,8 +596,8 @@ function findPossibleENSNames(textDocument: TextDocument) : StringLocation[] {
 		m[0] = m[0].substring(1, m[0].length - 1) // remove quotes
 		let location: StringLocation = {
 			range: {
-				start: textDocument.positionAt(m.index),
-				end: textDocument.positionAt(m.index + m[0].length - 1)
+				start: textDocument.positionAt(m.index + 1),
+				end: textDocument.positionAt(m.index + 1 + m[0].length)
 			},
 			content: m[0] // Possible location
 		};
@@ -797,9 +811,14 @@ function getCodeActions(diagnostics: Diagnostic[], textDocument: TextDocument, p
 			let range : Range = diagnostic.range;
 			let replacement : string = String(diagnostic.code).substring(DIAGNOSTIC_TYPE_NOT_CHECKSUM_ADDRESS.length);
 			codeActions.push(getQuickFix(diagnostic, title, range, replacement, textDocument));
-		} else if (String(diagnostic.code).startsWith(DIAGNOSTIC_TYPE_CONVERT_ENS_NAME)) {
-			let replacement : string = String(diagnostic.code).substring(DIAGNOSTIC_TYPE_CONVERT_ENS_NAME.length);
+		} else if (String(diagnostic.code).startsWith(DIAGNOSTIC_TYPE_CONVERT_TO_ENS_NAME)) {
+			let replacement : string = String(diagnostic.code).substring(DIAGNOSTIC_TYPE_CONVERT_TO_ENS_NAME.length);
 			let title : string = `Convert to ENS name \"${replacement}\"`;
+			let range : Range = diagnostic.range;
+			codeActions.push(getQuickFix(diagnostic, title, range, replacement, textDocument));
+		} else if (String(diagnostic.code).startsWith(DIAGNOSTIC_TYPE_CONVERT_FROM_ENS_NAME)) {
+			let replacement : string = String(diagnostic.code).substring(DIAGNOSTIC_TYPE_CONVERT_FROM_ENS_NAME.length);
+			let title : string = `Convert to Ethereum address`;
 			let range : Range = diagnostic.range;
 			codeActions.push(getQuickFix(diagnostic, title, range, replacement, textDocument));
 		}
