@@ -84,6 +84,9 @@ var ens: {
 };
 var amberdataApiKeySetting: string;
 
+let ensCache : Map<string, string> = new Map();
+let ensReverseCache : Map<string, string> = new Map();
+
 connection.onInitialize((params: InitializeParams) => {
 	let capabilities = params.capabilities;
 
@@ -750,24 +753,34 @@ connection.onCodeAction(
 	}
 )
 
-async function reverseENSLookup(address: string) {
+async function reverseENSLookup(address: string) : Promise<string> {
+	let cached = ensReverseCache.get(address);
+	if (cached !== undefined) {
+		return cached;
+	}
 	let result = "";
 	await ens.reverse(address).name().then(async function (name: string) {
 		connection.console.log("Found ENS name for " + address + " is: " + name);
 		// then forward ENS lookup to validate
 		let addr = await ENSLookup(name);
 		if (web3.utils.toChecksumAddress(address) == web3.utils.toChecksumAddress(addr)) {
+			ensReverseCache.set(address, name);
 			result = name;
 		}
 	}).catch(e => connection.console.log("Could not reverse lookup ENS name for " + address + " due to error: " + e));
 	return result;
 }
 
-async function ENSLookup(name: string) {
+async function ENSLookup(name: string) : Promise<string> {
+	let cached = ensCache.get(name);
+	if (cached !== undefined) {
+		return cached;
+	}
 	let result = "";
 	await ens.resolver(name).addr().then(function (addr: string) {
 		connection.console.log("ENS resolved address is " + addr);
 		if (addr != "0x0000000000000000000000000000000000000000") {
+			ensCache.set(name, addr);
 			result = addr;
 		}
 	}).catch(e => connection.console.log("Could not do lookup ENS address for resolved name " + name + " due to error: " + e));
