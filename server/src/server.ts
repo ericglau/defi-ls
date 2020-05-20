@@ -506,15 +506,39 @@ export interface StringLocation {
     content: string;
 }
 
+function numberFormat(amount: string, decimals: number) : string {
+	const numberFormat = new Intl.NumberFormat('en-US', {
+		minimumFractionDigits: decimals
+	})
+	try {
+		return numberFormat.format(Number(amount))
+	} catch (e) {
+		return amount;
+	}
+}
+
+function dollarFormat(amount: string) : string {
+	const dollarFormat = new Intl.NumberFormat('en-US', {
+		style: 'currency',
+		currency: 'USD',
+		minimumFractionDigits: 2
+	})
+	try {
+		return dollarFormat.format(Number(amount))
+	} catch (e) {
+		return amount;
+	}
+}
+
 function getMarkdownForToken(token: Token): string {
 	var buf = `**Token: ${token.name} (${token.symbol})**\n\n` +
-		`**Price:** \$${Number(token.price).toFixed(2)} USD  \n` +
-		`**Market Cap:** \$${Number(token.marketCap).toFixed(2)} USD  \n` +
-		`**Total Supply:** ${Number(token.totalSupply).toFixed(0)}  \n`;
+		`**Price:** ${dollarFormat(token.price)} USD  \n` +
+		`**Market Cap:** ${dollarFormat(token.marketCap)} USD  \n` +
+		`**Total Supply:** ${numberFormat(token.totalSupply, 0)}  \n`;
 	if (token.uniqueAddresses !== undefined) {
-		buf += `**Unique Addresses (Daily):** ${Number(token.uniqueAddresses).toFixed(0)}  \n`;
+		buf += `**Unique Addresses (Daily):** ${numberFormat(token.uniqueAddresses, 0)}  \n`;
 	}
-	buf += `**Trading Volume (Daily):** \$${Number(token.tradeVolume).toFixed(2)} USD  \n`;
+	buf += `**Trading Volume (Daily):** ${dollarFormat(token.tradeVolume)} USD  \n`;
 	return buf;
 }
 
@@ -881,7 +905,7 @@ async function getMarkdownForRegularAddress(address: string) {
 			if (result !== undefined && result.payload !== undefined && result.payload.price !== undefined && result.payload.value !== undefined) {
 				var total = result.payload.price.value.total;
 				var quote = result.payload.price.value.quote;
-				buf += " ($" + Number(total).toFixed(2) + " USD @ $" + Number(quote).toFixed(2) + ")";
+				buf += " (" + dollarFormat(total) + " USD @ " + dollarFormat(quote) + ")";
 			}
 		}).catch((error: string) => { connection.console.log("Error getting ETH balance: " + error) });
 
@@ -926,11 +950,11 @@ async function getMarkdownForRegularAddress(address: string) {
 				}) => {
 					var symbol = element.symbol;
 					var amount = BigNumber(element.amount).divide(BigNumber(10).power(BigNumber(element.decimals)));
-					buf += "    " + amount + " " + symbol;
+					buf += "    " + numberFormat(amount, 0) + " " + symbol;
 					if (element.price != null) {
-						var quote = Number(element.price.amount.quote).toFixed(2);
-						var totalValue = Number(element.price.amount.total).toFixed(2);
-						buf += " ($" + totalValue + " USD @ $" + quote + ") \n";
+						var quote = dollarFormat(element.price.amount.quote);
+						var totalValue = dollarFormat(element.price.amount.total);
+						buf += " (" + totalValue + " USD @ " + quote + ") \n";
 					} else {
 						buf += " \n";
 					}
