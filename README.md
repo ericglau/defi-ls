@@ -1,14 +1,27 @@
-# LSP Example
+# Ethereum Language Support for DeFi
 
-Heavily documented sample code for https://code.visualstudio.com/api/language-extensions/language-server-extension-guide
+Ethereum language support for DeFi applications in NodeJS.
 
-## Functionality
+## Features
 
-This Language Server works for plain text file. It has the following language features:
-- Completions
-- Diagnostics regenerated on each file change or configuration change
+- Hover information for Ethereum addresses with ETH/token balances and dollar values.
+- Hover information for token addresses with price, market cap, daily volumes, etc.
+- Hover information for ENS names.
+- Code lens for Ethereum addresses with Etherscan links for mainnet and testnets.
+- Code completion for Ethereum token addresses by name.
+- Snippets for DeFi applications such as Uniswap v2 and pTokens.
+- Automatic ENS name resolution and reverse resolution.
+- Quick fixes to convert addresses to ENS names.
+- Diagnostics and quick fixes for checksum failures and non-checksum addresses.
 
-It also includes an End-to-End test.
+## Setup
+
+To enable full functionality, go to VS Code settings, search for the following settings and enter the required values:
+- Code Lens: Enable
+- Infura: Enter your Infura Project ID and Project Secret from https://infura.io/
+- Amberdata: Enter your Amberdata API key from https://amberdata.io/
+
+The above secrets and API key are optional and are used by the extension to access their respective APIs for enhanced display data.
 
 ## Structure
 
@@ -16,7 +29,6 @@ It also includes an End-to-End test.
 .
 ├── client // Language Client
 │   ├── src
-│   │   ├── test // End to End tests for Language Client / Server
 │   │   └── extension.ts // Language Client entry point
 ├── package.json // The extension manifest.
 └── server // Language Server
@@ -24,7 +36,7 @@ It also includes an End-to-End test.
         └── server.ts // Language Server entry point
 ```
 
-## Running the Sample
+## Running the project from source
 
 - Run `npm install` in this folder. This installs all necessary npm modules in both the client and server folder
 - Open VS Code on this folder.
@@ -33,6 +45,6 @@ It also includes an End-to-End test.
 - Select `Launch Client` from the drop down.
 - Run the launch config.
 - If you want to debug the server as well use the launch configuration `Attach to Server`
-- In the [Extension Development Host] instance of VSCode, open a document in 'plain text' language mode.
-  - Type `j` or `t` to see `Javascript` and `TypeScript` completion.
-  - Enter text content such as `AAA aaa BBB`. The extension will emit diagnostics for all words in all-uppercase.
+- In the [Extension Development Host] instance of VSCode, open a JavaScript or TypeScript source file.
+  - Press the VS Code hotkeys for code completion and type "Token" for tokens or "DeFi" for snippets.
+  - Define strings with Ethereum addresses, token addresses, or ENS names, and see hover/diagnostic/code lens information.
