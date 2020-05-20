@@ -348,6 +348,34 @@ connection.onCompletion(
 		}
 
 		// Snippets
+		// Uniswap token
+		{
+			let snippet : string = 
+				"const token = new Token(ChainId.MAINNET, '0xc0FFee0000000000000000000000000000000000', 18, 'HOT', 'Caffeine')\n";
+			let imports = "import { ChainId, Token, TokenAmount, Pair, TradeType, Route } from '@uniswap/sdk'\n";
+			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: Uniswap token", 0);
+		}
+		// Uniswap pair
+		{
+			let snippet : string = 
+				"const HOT = new Token(ChainId.MAINNET, '0xc0FFee0000000000000000000000000000000000', 18, 'HOT', 'Caffeine')\n"+
+				"const NOT = new Token(ChainId.MAINNET, '0xDeCAf00000000000000000000000000000000000', 18, 'NOT', 'Caffeine')\n"+
+				"\n"+
+				"const pair = new Pair(new TokenAmount(HOT, '2000000000000000000'), new TokenAmount(NOT, '1000000000000000000'))\n";
+			let imports = "import { ChainId, Token, TokenAmount, Pair, TradeType, Route } from '@uniswap/sdk'\n";
+			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: Uniswap pair", 1);
+		}
+		// Uniswap route
+		{
+			let snippet : string = 
+				"const HOT = new Token(ChainId.MAINNET, '0xc0FFee0000000000000000000000000000000000', 18, 'HOT', 'Caffeine')\n"+
+				"const NOT = new Token(ChainId.MAINNET, '0xDeCAf00000000000000000000000000000000000', 18, 'NOT', 'Caffeine')\n"+
+				"const HOT_NOT = new Pair(new TokenAmount(HOT, '2000000000000000000'), new TokenAmount(NOT, '1000000000000000000'))\n"+
+				"\n"+
+				"const route = new Route([HOT_NOT], NOT)\n";
+			let imports = "import { ChainId, Token, TokenAmount, Pair, TradeType, Route } from '@uniswap/sdk'\n";
+			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: Uniswap route", 2);
+		}
 		// Uniswap trade
 		{
 			let snippet : string = 
@@ -358,7 +386,7 @@ connection.onCompletion(
 				"\n"+
 				"const trade = new Trade(NOT_TO_HOT, new TokenAmount(NOT, '1000000000000000'), TradeType.EXACT_INPUT)\n";
 			let imports = "import { ChainId, Token, TokenAmount, Pair, TradeType, Route } from '@uniswap/sdk'\n";
-			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: Uniswap trade");
+			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: Uniswap trade", 3);
 		}
 		// pTokens
 		{
@@ -372,9 +400,9 @@ connection.onCompletion(
 				"	}\n"+
 				"})\n";
 			let imports = "import pTokens from 'ptokens'\n";
-			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: pTokens");
+			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: pTokens", 4);
 		}
-		// pTokens web3
+		// pTokens (web3)
 		{
 			let snippet : string = 
 				"if (window.web3) {\n"+
@@ -388,16 +416,33 @@ connection.onCompletion(
 				"	console.log('No web3 detected')\n"+
 				"}\n";
 			let imports = "import pTokens from 'ptokens'\n";
-			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: pTokens (web3)");
+			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: pTokens (web3)", 5);
 		}
-
+		// pTokens (pBTC deposit address)
+		{
+			let snippet : string = 
+				"const depositAddress = await ptokens.pbtc.getDepositAddress(ethAddress)\n"+
+				"console.log(depositAddress.toString())\n"+
+				"\n"+
+				"//fund the BTC address just generated (not ptokens.js stuff)\n"+
+				"\n"+
+				"depositAddress.waitForDeposit()\n"+
+				"	.once('onBtcTxBroadcasted', tx => ... )\n"+
+				"	.once('onBtcTxConfirmed', tx => ...)\n"+
+				"	.once('onNodeReceivedTx', tx => ...)\n"+
+				"	.once('onNodeBroadcastedTx', tx => ...)\n"+
+				"	.once('onEthTxConfirmed', tx => ...)\n"+
+				"	.then(res => ...))\n";
+			let imports = "import pTokens from 'ptokens'\n";
+			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: pTokens (pBTC deposit address)", 6);
+		}
 
 
 		return completionItems;
 	}
 );
 
-function insertSnippet(_textDocumentPosition: TextDocumentPositionParams, snippetText: string, completionItems: CompletionItem[], imports: string, label: string) {
+function insertSnippet(_textDocumentPosition: TextDocumentPositionParams, snippetText: string, completionItems: CompletionItem[], imports: string | undefined, label: string, sortOrder: number) {
 	let textEdit: TextEdit = {
 		range: {
 			start: _textDocumentPosition.position,
@@ -405,20 +450,27 @@ function insertSnippet(_textDocumentPosition: TextDocumentPositionParams, snippe
 		},
 		newText: snippetText
 	};
-	let additionalTextEdit: TextEdit = {
-		range: {
-			start: { line: 0, character: 0 },
-			end: { line: 0, character: 0 }
-		},
-		newText: imports
-	};
 	let completionItem: CompletionItem = {
 		label: label,
 		kind: CompletionItemKind.Snippet,
 		data: undefined,
 		textEdit: textEdit,
-		additionalTextEdits: [additionalTextEdit]
+		sortText: String(sortOrder)
 	};
+	// check if imports should be added
+	let textDocument = documents.get(_textDocumentPosition.textDocument.uri)
+	let textDocumentContents = textDocument?.getText()
+	if (imports !== undefined && (textDocumentContents === undefined || !String(textDocumentContents).includes(imports))) {
+		let additionalTextEdit = {
+			range: {
+				start: { line: 0, character: 0 },
+				end: { line: 0, character: 0 }
+			},
+			newText: imports
+		};
+		completionItem.additionalTextEdits = [additionalTextEdit]
+	}
+
 	completionItems.push(completionItem);
 }
 
