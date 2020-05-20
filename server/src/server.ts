@@ -567,6 +567,28 @@ function findPossibleEthereumAddresses(textDocument: TextDocument) : StringLocat
 	return locations;
 }
 
+// find all possible ENS names
+function findPossibleENSNames(textDocument: TextDocument) : StringLocation[] {
+	let text = textDocument.getText();
+	let pattern = /["'][\w\d.]+[.][\w\d]{3}["']/g;  // quotes surrounding any string with one or more dots, and 3 letter suffix
+	let m: RegExpExecArray | null;
+
+	let problems = 0;
+	let locations: StringLocation[] = [];
+	while ((m = pattern.exec(text)) && problems < 100 /*settings.maxNumberOfProblems*/) {
+		m[0] = m[0].substring(1, m[0].length - 1) // remove quotes
+		let location: StringLocation = {
+			range: {
+				start: textDocument.positionAt(m.index),
+				end: textDocument.positionAt(m.index + m[0].length - 1)
+			},
+			content: m[0] // Possible location
+		};
+		locations.push(location);
+	}
+	return locations;
+}
+
 function isValidEthereumAddress(address: string) {
 	return web3.utils.isAddress(address)
 }
@@ -615,7 +637,7 @@ function toPublicKey(privateKey: string) : string {
 
 // Handle code lens requests
 connection.onCodeLens(
-	(_params: CodeLensParams): CodeLens[] => {
+	async (_params: CodeLensParams): Promise<CodeLens[]> => {
 		let textDocument = documents.get(_params.textDocument.uri)
 		if (typeof textDocument !== 'undefined') {
 			let codeLenses: CodeLens[] = [];
@@ -634,6 +656,21 @@ connection.onCodeLens(
 				if (isPrivateKey(element.content)) {
 					pushEthereumAddressCodeLenses(CODE_LENS_TYPE_ETH_PRIVATE_KEY, element.range, toPublicKey(element.content), codeLenses);
 				}
+			});
+
+			// ENS names from string literals
+			let possibleEnsNames : StringLocation[] = findPossibleENSNames(textDocument);
+			for (let i = 0; i < possibleEnsNames.length; i++) {
+				let element : StringLocation = possibleEnsNames[i];
+				connection.console.log("FOR EACH POSSIBLDE ENS NAME " + element.content)
+				let ensAddress : string = await ENSLookup(element.content);
+				connection.console.log("ENS STTRING " + ensAddress)
+				if (ensAddress !== "") {
+					pushEthereumAddressCodeLenses(CODE_LENS_TYPE_ETH_ADDRESS, element.range, ensAddress, codeLenses);
+				}
+			}
+			possibleEnsNames.forEach( async (element) => {
+
 			});
 
 			// return
