@@ -1,6 +1,6 @@
 # Ethereum Language Support for DeFi
 
-Ethereum language support for DeFi applications in NodeJS.
+Ethereum DeFi support for NodeJS applications in VS Code.
 
 ## Features
 

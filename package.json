@@ -1,7 +1,7 @@
 {
 	"name": "defi-ls",
 	"displayName": "Ethereum Language Support for DeFi",
-	"description": "Ethereum language support for DeFi applications in NodeJS",
+	"description": "Ethereum DeFi support for NodeJS applications",
 	"author": "Eric Lau",
 	"license": "EPL-2.0",
 	"version": "0.0.1",
@@ -29,7 +29,7 @@
 	"contributes": {
 		"configuration": {
 			"type": "object",
-			"title": "Ethereum Language Support for DeFi",
+			"title": "Ethereum DeFi",
 			"properties": {
 				"defi.maxNumberOfProblems": {
 					"scope": "resource",
