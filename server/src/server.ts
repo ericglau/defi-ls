@@ -84,9 +84,11 @@ var ens: {
 	 reverse: (arg0: string) => { (): any; new(): any; name: { (): Promise<any>; new(): any; }; };  
 };
 var amberdataApiKeySetting: string;
+var cacheDurationSetting: number;
 
 let ensCache : Map<string, string> = new Map();
 let ensReverseCache : Map<string, string> = new Map();
+let tokenCache : Map<string, Token> = new Map();
 
 connection.onInitialize((params: InitializeParams) => {
 	let capabilities = params.capabilities;
@@ -150,12 +152,13 @@ interface DefiSettings {
 	infuraProjectId: string;
 	infuraProjectSecret: string;
 	amberdataApiKey: string;
+	cacheDuration: number;
 }
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
-const defaultSettings: DefiSettings = { maxNumberOfProblems: 1000, infuraProjectId: "", infuraProjectSecret: "", amberdataApiKey: "" };
+const defaultSettings: DefiSettings = { maxNumberOfProblems: 100, infuraProjectId: "", infuraProjectSecret: "", amberdataApiKey: "", cacheDuration: 60000 };
 let globalSettings: DefiSettings = defaultSettings;
 
 // Cache the settings of all open documents
@@ -218,6 +221,12 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 		connection.console.warn("Amberdata.io API key has not been set. Obtain one from https://amberdata.io/ and set the in the VS Code settings by searching for \"Amberdata\".");
 	} else {
 		amberdataApiKeySetting = settings.amberdataApiKey;
+	}
+
+	if (settings.cacheDuration === undefined || settings.cacheDuration < 0) {
+		cacheDurationSetting = 60000;
+	} else {
+		cacheDurationSetting = settings.cacheDuration;
 	}
 
 	let diagnostics: Diagnostic[] = [];
@@ -300,6 +309,7 @@ export interface Token {
 	totalSupply: string;
 	tradeVolume: string;
 	uniqueAddresses: string | undefined;
+	lastUpdated: Number;
 }
 
 async function getTopTokens() {
@@ -329,7 +339,8 @@ async function getTopTokens() {
 						price: element.currentPrice,
 						totalSupply: element.totalSupply,
 						tradeVolume: element.tradeVolume,
-						uniqueAddresses: element.uniqueAddresses
+						uniqueAddresses: element.uniqueAddresses,
+						lastUpdated: Date.now()
 					}
 					tokens.push(token)
 				});
@@ -898,6 +909,10 @@ async function getHoverMarkdownForAddress(address: string) {
 }
 
 async function getToken(address: string) {
+	let cached = tokenCache.get(address);
+	if (cached !== undefined && cached.lastUpdated > (Date.now() - cacheDurationSetting)) {
+		return cached;
+	}
 	let token : Token | undefined = undefined;
 	if (amberdataApiKeySetting !== "") {
 		// Get top tokens by marketcap
@@ -923,8 +938,10 @@ async function getToken(address: string) {
 					price: element.priceUSD,
 					totalSupply: element.totalSupply,
 					tradeVolume: element.dailyVolumeUSD,
-					uniqueAddresses: element.uniqueAddresses
+					uniqueAddresses: element.uniqueAddresses,
+					lastUpdated: Date.now()
 				}
+				tokenCache.set(address, token)
 			}
 		}).catch((error: string) => { connection.console.log("Error getting token: " + error) });
 	}

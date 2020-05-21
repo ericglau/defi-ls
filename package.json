@@ -62,6 +62,12 @@
 					"scope": "window",
 					"type": "string",
 					"description": "Your Amberdata.io API key"
+				},
+				"defi.cacheDuration": {
+					"scope": "window",
+					"type": "number",
+					"description": "Maximum time in milliseconds to keep cached token data.",
+					"default": 60000
 				}
 			}
 		}
