@@ -90,6 +90,7 @@ let ensCache : Map<string, string> = new Map();
 let ensReverseCache : Map<string, string> = new Map();
 let tokenCache : Map<string, Token> = new Map();
 let topTokensCache : Token[] = []
+let addressMarkdownCache : Map<string, [Number, string]> = new Map(); // map address to [timestamp, markdown]
 
 connection.onInitialize((params: InitializeParams) => {
 	let capabilities = params.capabilities;
@@ -963,7 +964,12 @@ async function getMarkdownForTokenAddress(address: string) {
 }
 
 async function getMarkdownForRegularAddress(address: string) {
-	let buf: MarkedString = "**Ethereum Address**: " + address + "\n\n";
+	let cached = addressMarkdownCache.get(address);
+	if (cached !== undefined && cached[0] > (Date.now() - cacheDurationSetting)) { // cached timestamp not expired
+		return cached[1]; // return cached markdown
+	}
+
+	let buf: string = "**Ethereum Address**: " + address + "\n\n";
 	// reverse ENS lookup
 	let ensName: string = await reverseENSLookup(address);
 	if (ensName != "") {
@@ -1057,6 +1063,7 @@ async function getMarkdownForRegularAddress(address: string) {
 		}).catch((error: string) => { connection.console.log("Error getting token balances: " + error) });
 
 	}
+	addressMarkdownCache.set(address, [Date.now(), buf]);
 	return buf;
 }
 

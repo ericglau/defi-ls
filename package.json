@@ -66,7 +66,7 @@
 				"defi.cacheDuration": {
 					"scope": "window",
 					"type": "number",
-					"description": "Maximum time in milliseconds to keep cached token data.",
+					"description": "Maximum time in milliseconds to keep cached address and token data.",
 					"default": 60000
 				}
 			}
