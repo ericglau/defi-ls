@@ -22,29 +22,3 @@ To enable full functionality, go to VS Code settings, search for the following s
 - Amberdata: Enter your Amberdata API key from https://amberdata.io/
 
 The above secrets and API key are optional and are used by the extension to access additional APIs for enhanced display data.
-
-## Structure
-
-```
-.
-├── client // Language Client
-│   ├── src
-│   │   └── extension.ts // Language Client entry point
-├── package.json // The extension manifest.
-└── server // Language Server
-    └── src
-        └── server.ts // Language Server entry point
-```
-
-## Running the project from source
-
-- Run `npm install` in this folder. This installs all necessary npm modules in both the client and server folder
-- Open VS Code on this folder.
-- Press Ctrl+Shift+B to compile the client and server.
-- Switch to the Debug viewlet.
-- Select `Launch Client` from the drop down.
-- Run the launch config.
-- If you want to debug the server as well use the launch configuration `Attach to Server`
-- In the [Extension Development Host] instance of VSCode, open a JavaScript or TypeScript source file.
-  - Press the VS Code hotkeys for code completion and type "Token" for tokens or "DeFi" for snippets.
-  - Define strings with Ethereum addresses, token addresses, or ENS names, and see hover/diagnostic/code lens information.
