@@ -89,6 +89,7 @@ var cacheDurationSetting: number;
 let ensCache : Map<string, string> = new Map();
 let ensReverseCache : Map<string, string> = new Map();
 let tokenCache : Map<string, Token> = new Map();
+let topTokensCache : Token[] = []
 
 connection.onInitialize((params: InitializeParams) => {
 	let capabilities = params.capabilities;
@@ -313,6 +314,10 @@ export interface Token {
 }
 
 async function getTopTokens() {
+	if (topTokensCache.length > 0 && topTokensCache[0].lastUpdated > (Date.now() - cacheDurationSetting)) {
+		return topTokensCache;
+	}
+
 	let tokens : Token[] = []
 	if (amberdataApiKeySetting !== "") {
 		// Get top tokens by marketcap
@@ -347,6 +352,7 @@ async function getTopTokens() {
 			}
 		}).catch((error: string) => { connection.console.log("Error getting top tokens: " + error) });
 	}
+	topTokensCache = tokens;
 	return tokens;
 }
 
