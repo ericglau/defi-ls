@@ -83,7 +83,7 @@ var ens: {
 	resolver: (arg0: string) => { (): any; new(): any; addr: { (): Promise<any>; new(): any; }; };
 	 reverse: (arg0: string) => { (): any; new(): any; name: { (): Promise<any>; new(): any; }; };  
 };
-var amberdataApiKeySetting: string;
+var amberdataApiKeySetting: string = "";
 var cacheDurationSetting: number;
 
 let ensCache : Map<string, string> = new Map();
@@ -176,6 +176,13 @@ connection.onDidChangeConfiguration(change => {
 		);
 	}
 
+	// Clear data caches
+	ensCache.clear();
+	ensReverseCache.clear();
+	tokenCache.clear();
+	topTokensCache = []
+	addressMarkdownCache.clear();
+
 	// Revalidate all open text documents
 	documents.all().forEach(validateTextDocument);
 });
@@ -212,17 +219,29 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	let settings = await getDocumentSettings(textDocument.uri);
 
 	if (settings.infuraProjectId === "" || settings.infuraProjectId === "") {
-		connection.console.error("Infura project ID and/or secret has not been set. Obtain them from https://infura.io/ and set the in the VS Code settings by searching for \"Infura\".");
+		connection.console.warn("Infura project ID and/or secret has not been set. Obtain them from https://infura.io/ and set them in the VS Code settings by searching for \"Infura\".");
 	} else {
 		// set up infura and ENS
 		web3provider = new Web3.providers.HttpProvider('https://:' + settings.infuraProjectSecret + '@mainnet.infura.io/v3/' + settings.infuraProjectId);
 		ens = new ENS(web3provider);
+		connection.console.info("Using Infura for web3.");
 	}
 
 	if (settings.amberdataApiKey === "") {
-		connection.console.warn("Amberdata.io API key has not been set. Obtain one from https://amberdata.io/ and set the in the VS Code settings by searching for \"Amberdata\".");
+		connection.console.warn("Amberdata.io API key has not been set. Obtain one from https://amberdata.io/ and set the in them VS Code settings by searching for \"Amberdata\".");
 	} else {
 		amberdataApiKeySetting = settings.amberdataApiKey;
+		if (web3provider === undefined || ens === undefined) {
+			// Use Amberdata for web3 if Infura is not set
+			web3provider = new Web3.providers.HttpProvider('https://rpc.web3api.io?x-api-key=' + amberdataApiKeySetting);
+			ens = new ENS(web3provider)
+			connection.console.info("Using Amberdata for web3.");
+		}
+		connection.console.info("Using Amberdata for address and token data.");
+	}
+
+	if (web3provider === undefined) {
+		connection.console.error("No web3 connection has been configured.  Configure Infura and/or Amberdata keys in VS Code settings for Ethereum DeFi.");
 	}
 
 	if (settings.cacheDuration === undefined || settings.cacheDuration < 0) {
@@ -786,6 +805,10 @@ connection.onCodeAction(
 )
 
 async function reverseENSLookup(address: string) : Promise<string> {
+	if (ens === undefined) {
+		return "";
+	}
+
 	let cached = ensReverseCache.get(address);
 	if (cached !== undefined) {
 		return cached;
@@ -804,6 +827,10 @@ async function reverseENSLookup(address: string) : Promise<string> {
 }
 
 async function ENSLookup(name: string) : Promise<string> {
+	if (ens === undefined) {
+		return "";
+	}
+
 	let cached = ensCache.get(name);
 	if (cached !== undefined) {
 		return cached;
@@ -970,11 +997,17 @@ async function getMarkdownForRegularAddress(address: string) {
 	}
 
 	let buf: string = "**Ethereum Address**: " + address + "\n\n";
+	if (web3provider === undefined) {
+		// no web3 provider, just show basic address and don't cache
+		return buf;
+	}
+
 	// reverse ENS lookup
 	let ensName: string = await reverseENSLookup(address);
 	if (ensName != "") {
 		buf += "**ENS Name**: " + ensName + "\n\n";
 	}
+
 	var web3connection = new Web3(web3provider);
 	let balance = await web3connection.eth.getBalance(address);
 	if (balance > 0) {
