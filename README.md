@@ -21,7 +21,7 @@ To enable full functionality, go to VS Code settings, search for the following s
 - Infura: Enter your Infura Project ID and Project Secret from https://infura.io/
 - Amberdata: Enter your Amberdata API key from https://amberdata.io/
 
-The above secrets and API key are optional and are used by the extension to access their respective APIs for enhanced display data.
+The above secrets and API key are optional and are used by the extension to access additional APIs for enhanced display data.
 
 ## Structure
 
