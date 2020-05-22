@@ -1,17 +1,20 @@
-# Ethereum Language Support for DeFi
+# Ethereum DeFi Language Support
 
 Ethereum DeFi support for NodeJS applications in VS Code.
 
 ## Features
 
-- Hover information for Ethereum addresses with ETH/token balances and dollar values.
-- Hover information for token addresses with price, market cap, daily volumes, etc.
-- Hover information for ENS names.
-- Code lens for Ethereum addresses with Etherscan links for mainnet and testnets.
 - Code completion for Ethereum token addresses by name.
-- Snippets for DeFi applications such as Uniswap v2 and pTokens.
+- Hover over token addresses for live data including price, market cap, and daily volumes.
+- Code lens for Ethereum addresses with Etherscan links for mainnet and testnets.
+![](images/token.gif)
+- Hover over Ethereum addresses for live data including ETH/token balances and dollar values.
 - Automatic ENS name resolution and reverse resolution.
-- Quick fixes to convert addresses to ENS names.
+- Quick fixes to convert addresses to ENS names and vice versa.
+![](images/ens.gif)
+- Snippets for DeFi applications such as pTokens and Uniswap v2 SDKs.
+![](images/ptokens.gif)
+![](images/uniswap.gif)
 - Diagnostics and quick fixes for checksum failures and non-checksum addresses.
 
 ## Setup

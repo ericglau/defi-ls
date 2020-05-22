@@ -1,13 +1,13 @@
 {
-	"name": "lsp-sample-client",
-	"description": "VSCode part of a language server",
-	"author": "Microsoft Corporation",
-	"license": "MIT",
+	"name": "defi-lsp-client",
+	"description": "Ethereum DeFi Language Support for VS Code",
+	"author": "Eric Lau",
+	"license": "EPL-2.0",
 	"version": "0.0.1",
-	"publisher": "vscode",
+	"publisher": "ericglau",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/Microsoft/vscode-extension-samples"
+		"url": "https://github.com/ericglau/defi-ls"
 	},
 	"engines": {
 		"vscode": "^1.43.0"
