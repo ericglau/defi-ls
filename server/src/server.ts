@@ -457,7 +457,7 @@ connection.onCompletion(
 				"		defaultEndpoint: 'https://......' //optional\n"+
 				"	}\n"+
 				"})\n";
-			let imports = "import pTokens from 'ptokens'\n";
+			let imports = "import { pTokens } from 'ptokens'\n";
 			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: pTokens", 4);
 		}
 		// pTokens (web3)
@@ -473,7 +473,7 @@ connection.onCompletion(
 				"} else {\n"+
 				"	console.log('No web3 detected')\n"+
 				"}\n";
-			let imports = "import pTokens from 'ptokens'\n";
+			let imports = "import { pTokens } from 'ptokens'\n";
 			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: pTokens (web3)", 5);
 		}
 		// pTokens (pBTC deposit address)
@@ -491,7 +491,7 @@ connection.onCompletion(
 				"	.once('onNodeBroadcastedTx', tx => ...)\n"+
 				"	.once('onEthTxConfirmed', tx => ...)\n"+
 				"	.then(res => ...))\n";
-			let imports = "import pTokens from 'ptokens'\n";
+			let imports = "import { pTokens } from 'ptokens'\n";
 			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: pTokens (pBTC deposit address)", 6);
 		}
 
