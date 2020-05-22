@@ -4,6 +4,9 @@ Ethereum DeFi support for NodeJS applications in VS Code.
 
 ## Features
 
+- Diagnostics and quick fixes for address checksum failures and non-checksum addresses.
+<img src="images/invalidchecksum.png" width="640">
+![](images/convertchecksum.gif)
 - Code completion for Ethereum token addresses by name.
 - Hover over token addresses for live data including price, market cap, and daily volumes.
 - Code lens for Ethereum addresses with Etherscan links for mainnet and testnets.
@@ -15,9 +18,6 @@ Ethereum DeFi support for NodeJS applications in VS Code.
 - Snippets for DeFi applications such as pTokens and Uniswap v2 SDKs.
 ![](images/ptokens.gif)
 ![](images/uniswap.gif)
-- Diagnostics and quick fixes for checksum failures and non-checksum addresses.
-<img src="images/invalidchecksum.png" width="640">
-![](images/convertchecksum.gif)
 
 ## Setup
 
