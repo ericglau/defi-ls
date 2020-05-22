@@ -16,6 +16,8 @@ Ethereum DeFi support for NodeJS applications in VS Code.
 ![](images/ptokens.gif)
 ![](images/uniswap.gif)
 - Diagnostics and quick fixes for checksum failures and non-checksum addresses.
+<img src="images/invalidchecksum.png" width="640">
+![](images/convertchecksum.gif)
 
 ## Setup
 
