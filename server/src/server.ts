@@ -410,7 +410,7 @@ connection.onCompletion(
 		{
 			let snippet : string = 
 				"const token = new Token(ChainId.MAINNET, '0xc0FFee0000000000000000000000000000000000', 18, 'HOT', 'Caffeine')\n";
-			let imports = "import { ChainId, Token, TokenAmount, Pair, TradeType, Route } from '@uniswap/sdk'\n";
+			let imports = "import { ChainId, Token, TokenAmount, Pair, Trade, TradeType, Route } from '@uniswap/sdk'\n";
 			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: Uniswap token", 0);
 		}
 		// Uniswap pair
@@ -420,7 +420,7 @@ connection.onCompletion(
 				"const NOT = new Token(ChainId.MAINNET, '0xDeCAf00000000000000000000000000000000000', 18, 'NOT', 'Caffeine')\n"+
 				"\n"+
 				"const pair = new Pair(new TokenAmount(HOT, '2000000000000000000'), new TokenAmount(NOT, '1000000000000000000'))\n";
-			let imports = "import { ChainId, Token, TokenAmount, Pair, TradeType, Route } from '@uniswap/sdk'\n";
+			let imports = "import { ChainId, Token, TokenAmount, Pair, Trade, TradeType, Route } from '@uniswap/sdk'\n";
 			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: Uniswap pair", 1);
 		}
 		// Uniswap route
@@ -431,7 +431,7 @@ connection.onCompletion(
 				"const HOT_NOT = new Pair(new TokenAmount(HOT, '2000000000000000000'), new TokenAmount(NOT, '1000000000000000000'))\n"+
 				"\n"+
 				"const route = new Route([HOT_NOT], NOT)\n";
-			let imports = "import { ChainId, Token, TokenAmount, Pair, TradeType, Route } from '@uniswap/sdk'\n";
+			let imports = "import { ChainId, Token, TokenAmount, Pair, Trade, TradeType, Route } from '@uniswap/sdk'\n";
 			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: Uniswap route", 2);
 		}
 		// Uniswap trade
@@ -443,7 +443,7 @@ connection.onCompletion(
 				"const NOT_TO_HOT = new Route([HOT_NOT], NOT)\n"+
 				"\n"+
 				"const trade = new Trade(NOT_TO_HOT, new TokenAmount(NOT, '1000000000000000'), TradeType.EXACT_INPUT)\n";
-			let imports = "import { ChainId, Token, TokenAmount, Pair, TradeType, Route } from '@uniswap/sdk'\n";
+			let imports = "import { ChainId, Token, TokenAmount, Pair, Trade, TradeType, Route } from '@uniswap/sdk'\n";
 			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: Uniswap trade", 3);
 		}
 		// pTokens
