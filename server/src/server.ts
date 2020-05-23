@@ -68,6 +68,8 @@ const RINKEBY: string = 'rinkeby';
 const GOERLI: string = 'goerli';
 const NETWORKS : string[] = [ MAINNET, ROPSTEN, KOVAN, RINKEBY, GOERLI];
 
+const TOKEN_LIST_JSON_URL = 'https://token-list-api.defipulse.com/tokens/list.json'
+
 var Web3 = require('web3');
 var web3 = new Web3();
 var ENS = require('ethereum-ens');
@@ -325,10 +327,10 @@ export interface Token {
 	name: string;
 	symbol: string;
 	address: string;
-	marketCap: string;
-	price: string;
-	totalSupply: string;
-	tradeVolume: string;
+	marketCap: string | undefined;
+	price: string | undefined;
+	totalSupply: string | undefined;
+	tradeVolume: string | undefined;
 	uniqueAddresses: string | undefined;
 	lastUpdated: Number;
 }
@@ -338,7 +340,39 @@ async function getTopTokens() {
 		return topTokensCache;
 	}
 
-	let tokens : Token[] = []
+	let tokensList : Token[] = []
+	let topTokensMap : Map<string, Token> = new Map();
+
+	// Get tokens from Tokens List json
+	var tokensListOpts = {
+		method: 'GET',
+		url: TOKEN_LIST_JSON_URL
+		};
+
+	await request(tokensListOpts, async function (error: string | undefined, response: any, body: any) {
+		if (error) {
+			connection.console.log("Request error getting tokens list: " + error);
+			return;
+		}
+		var result = JSON.parse(body);
+		if (result !== undefined) {
+			result.forEach((element: { name: string, symbol:string, contract:string, decimals:number, icon:string, description:string, is_dao_or_governance_token:boolean, is_personal_token:boolean, standard:string }) => {
+				let token : Token = {
+					name: element.name,
+					symbol: element.symbol,
+					address: getChecksumAddress(element.contract),
+					marketCap: undefined,
+					price: undefined,
+					totalSupply: undefined,
+					tradeVolume: undefined,
+					uniqueAddresses: undefined,
+					lastUpdated: Date.now()
+				}
+				tokensList.push(token)
+			});
+		}
+	}).catch((error: string) => { connection.console.log("Error getting tokens list: " + error) });
+
 	if (amberdataApiKeySetting !== "") {
 		// Get top tokens by marketcap
 		var options = {
@@ -359,7 +393,7 @@ async function getTopTokens() {
 					let token : Token = {
 						name: element.name,
 						symbol: element.symbol,
-						address: element.address,
+						address: getChecksumAddress(element.address),
 						marketCap: element.marketCap,
 						price: element.currentPrice,
 						totalSupply: element.totalSupply,
@@ -367,11 +401,34 @@ async function getTopTokens() {
 						uniqueAddresses: element.uniqueAddresses,
 						lastUpdated: Date.now()
 					}
-					tokens.push(token)
+					topTokensMap.set(token.address, token)
 				});
 			}
 		}).catch((error: string) => { connection.console.log("Error getting top tokens: " + error) });
 	}
+
+	// merge market data into tokens list
+	let tokens : Token[] = []
+	tokensList.forEach(element => {
+		let result : Token | undefined = topTokensMap.get(element.address);
+		if (result !== undefined) {
+			// use market data token
+			tokens.push(result);
+		} else {
+			// use json result's token
+			tokens.push(element);
+		}
+	});
+	// add unlisted tokens that have market data
+	for (var entry of topTokensMap.entries()) {
+		var key = entry[0],
+			value = entry[1];
+		if (!tokens.includes(value)) {
+			value.name = value.name
+			tokens.push(value);
+		}
+	}
+	
 	topTokensCache = tokens;
 	return tokens;
 }
@@ -589,14 +646,22 @@ function dollarFormat(amount: string) : string {
 }
 
 function getMarkdownForToken(token: Token): string {
-	var buf = `**Token: ${token.name} (${token.symbol})**\n\n` +
-		`**Price:** ${dollarFormat(token.price)} USD  \n` +
-		`**Market Cap:** ${dollarFormat(token.marketCap)} USD  \n` +
-		`**Total Supply:** ${numberFormat(token.totalSupply, 0)}  \n`;
+	var buf = `**Token: ${token.name} (${token.symbol})**\n\n`;
+	if (token.price !== undefined) {
+		buf += `**Price:** ${dollarFormat(token.price)} USD  \n`;
+	}
+	if (token.marketCap !== undefined) {
+		buf += `**Market Cap:** ${dollarFormat(token.marketCap)} USD  \n`;
+	}
+	if (token.totalSupply !== undefined) {
+		buf += `**Total Supply:** ${numberFormat(token.totalSupply, 0)}  \n`;
+	}
 	if (token.uniqueAddresses !== undefined) {
 		buf += `**Unique Addresses (Daily):** ${numberFormat(token.uniqueAddresses, 0)}  \n`;
 	}
-	buf += `**Trading Volume (Daily):** ${dollarFormat(token.tradeVolume)} USD  \n`;
+	if (token.tradeVolume !== undefined) {
+		buf += `**Trading Volume (Daily):** ${dollarFormat(token.tradeVolume)} USD  \n`;
+	}
 	return buf;
 }
 
