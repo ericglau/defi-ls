@@ -57,6 +57,7 @@ const DIAGNOSTIC_TYPE_NOT_VALID_ADDRESS: string = 'NotValidAddress';
 const DIAGNOSTIC_TYPE_NOT_CHECKSUM_ADDRESS: string = 'NotChecksumAddress';
 const DIAGNOSTIC_TYPE_CONVERT_TO_ENS_NAME: string = 'ConvertENSName';
 const DIAGNOSTIC_TYPE_CONVERT_FROM_ENS_NAME: string = 'ConvertFromENSName';
+const DIAGNOSTIC_TYPE_GENERATE_ABI: string = 'GenerateABI';
 
 const CODE_LENS_TYPE_ETH_ADDRESS: string = 'EthAddress';
 const CODE_LENS_TYPE_ETH_PRIVATE_KEY: string = 'EthPrivateKey';
@@ -86,6 +87,7 @@ var ens: {
 	 reverse: (arg0: string) => { (): any; new(): any; name: { (): Promise<any>; new(): any; }; };  
 };
 var amberdataApiKeySetting: string = "";
+var etherscanApiKeySetting: string = "";
 var cacheDurationSetting: number;
 
 let ensCache : Map<string, string> = new Map();
@@ -156,13 +158,14 @@ interface DefiSettings {
 	infuraProjectId: string;
 	infuraProjectSecret: string;
 	amberdataApiKey: string;
+	etherscanApiKey: string;
 	cacheDuration: number;
 }
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
-const defaultSettings: DefiSettings = { maxNumberOfProblems: 100, infuraProjectId: "", infuraProjectSecret: "", amberdataApiKey: "", cacheDuration: 60000 };
+const defaultSettings: DefiSettings = { maxNumberOfProblems: 100, infuraProjectId: "", infuraProjectSecret: "", amberdataApiKey: "", etherscanApiKey: "", cacheDuration: 60000 };
 let globalSettings: DefiSettings = defaultSettings;
 
 // Cache the settings of all open documents
@@ -242,6 +245,13 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 		connection.console.info("Using Amberdata for address and token data.");
 	}
 
+	if (settings.etherscanApiKey === "") {
+		connection.console.warn("Etherscan.io API key has not been set. Obtain one from https://etherscan.io/ and set the in them VS Code settings by searching for \"Etherscan\".");
+	} else {
+		etherscanApiKeySetting = settings.etherscanApiKey;
+		connection.console.info("Using Etherscan for contract ABIs.");
+	}
+
 	if (web3provider === undefined) {
 		connection.console.error("No web3 connection has been configured.  Configure Infura and/or Amberdata keys in VS Code settings for Ethereum DeFi.");
 	}
@@ -275,6 +285,11 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 				if (ensName !== "") {
 					addDiagnostic(element, `${element.content} can be converted to its ENS name \"${ensName}\"`, 'Convert the Ethereum address to its ENS name.', DiagnosticSeverity.Hint, DIAGNOSTIC_TYPE_CONVERT_TO_ENS_NAME + ensName);
 				}
+
+				// Infer if it's possibly a contract, then show quickfix to generate contract ABI
+				//if (isContract(element.content)) { TODO
+					addDiagnostic(element, `Generate contract ABI`, 'Generate contract ABI from Etherscan', DiagnosticSeverity.Hint, DIAGNOSTIC_TYPE_GENERATE_ABI + element.content);
+				//}
 			}
 		}
 	}
@@ -842,7 +857,7 @@ function getTokenName(token : Token) {
 }
 
 connection.onCodeAction(
-	(_params: CodeActionParams): CodeAction[] => {
+	async (_params: CodeActionParams): Promise<CodeAction[]> => {
 		let codeActions : CodeAction[] = [];
 
 		let textDocument = documents.get(_params.textDocument.uri)
@@ -852,7 +867,7 @@ connection.onCodeAction(
 		let context : CodeActionContext = _params.context;
 		let diagnostics : Diagnostic[] = context.diagnostics;
 
-		codeActions = getCodeActions(diagnostics, textDocument, _params);
+		codeActions = await getCodeActions(diagnostics, textDocument, _params);
 
 		return codeActions;
 	}
@@ -900,11 +915,13 @@ async function ENSLookup(name: string) : Promise<string> {
 	return result;
 }
 
-function getCodeActions(diagnostics: Diagnostic[], textDocument: TextDocument, params: CodeActionParams) : CodeAction[] {
+async function getCodeActions(diagnostics: Diagnostic[], textDocument: TextDocument, params: CodeActionParams) : Promise<CodeAction[]> {
 	let codeActions : CodeAction[] = [];
 
 	// Get quick fixes for each diagnostic
-	diagnostics.forEach( (diagnostic) => {
+	for (let i = 0; i < diagnostics.length; i++) {
+
+		let diagnostic = diagnostics[i];
 		if (String(diagnostic.code).startsWith(DIAGNOSTIC_TYPE_NOT_CHECKSUM_ADDRESS)) {
 			let title : string = "Convert to checksum address";
 			let range : Range = diagnostic.range;
@@ -920,8 +937,16 @@ function getCodeActions(diagnostics: Diagnostic[], textDocument: TextDocument, p
 			let title : string = `Convert to Ethereum address`;
 			let range : Range = diagnostic.range;
 			codeActions.push(getQuickFix(diagnostic, title, range, replacement, textDocument));
+		} else if (String(diagnostic.code).startsWith(DIAGNOSTIC_TYPE_GENERATE_ABI)) {
+			let abi : JSON | undefined = await getContractAbi(String(diagnostic.code).substring(DIAGNOSTIC_TYPE_GENERATE_ABI.length));
+			if (abi !== undefined) {
+				let title : string = `Generate contract ABI`;
+				let range : Range = diagnostic.range;
+				let replacement = JSON.stringify(abi);
+				codeActions.push(getQuickFixInsert(diagnostic, title, range, replacement, textDocument));	
+			}
 		}
-	});
+	}
 
 	return codeActions;
 }
@@ -937,6 +962,24 @@ function getQuickFix(diagnostic:Diagnostic, title:string, range:Range, replaceme
 	let codeAction : CodeAction = { 
 		title: title, 
 		kind: CodeActionKind.QuickFix,
+		edit: workspaceEdit,
+		diagnostics: [diagnostic]
+	}
+	return codeAction;
+}
+
+
+function getQuickFixInsert(diagnostic:Diagnostic, title:string, range:Range, insert:string, textDocument:TextDocument) : CodeAction {
+	let textEdit : TextEdit = { 
+		range: range,
+		newText: insert
+	};
+	let workspaceEdit : WorkspaceEdit = {
+		changes: { [textDocument.uri]:[textEdit] }
+	}
+	let codeAction : CodeAction = { 
+		title: title, 
+		kind: CodeActionKind.RefactorExtract,
 		edit: workspaceEdit,
 		diagnostics: [diagnostic]
 	}
@@ -994,6 +1037,34 @@ async function getHoverMarkdownForAddress(address: string) {
 		result = await getMarkdownForRegularAddress(address)
 	}
 	return result;
+}
+
+async function getContractAbi(address: string) {
+	// let cached = abiCache.get(address);
+	// if (cached !== undefined && abiCache.lastUpdated > (Date.now() - cacheDurationSetting)) {
+	// 	return cached;
+	// }
+
+	let abi : JSON | undefined = undefined;
+	if (etherscanApiKeySetting !== "") {
+		// Get token market data
+		var options = {
+			method: 'GET',
+			url: 'https://api.etherscan.io/api?module=contract&action=getabi&address=' + address + '&apikey=' + etherscanApiKeySetting
+		};
+
+		await request(options, async function (error: string | undefined, response: any, body: any) {
+			if (error) {
+				connection.console.log("Request error while getting ABI: " + error);
+				return;
+			}
+			var result = JSON.parse(body);
+			if (result !== undefined && result.status !== undefined && result.status === "1" && result.result !== undefined) {
+				abi = result.result;
+			}
+		}).catch((error: string) => { connection.console.log("Error getting token: " + error) });
+	}
+	return abi;
 }
 
 async function getToken(address: string) {

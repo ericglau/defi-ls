@@ -63,6 +63,11 @@
 					"type": "string",
 					"description": "Your Amberdata.io API key"
 				},
+				"defi.etherscanApiKey": {
+					"scope": "window",
+					"type": "string",
+					"description": "Your Etherscan.io API key"
+				},
 				"defi.cacheDuration": {
 					"scope": "window",
 					"type": "number",
