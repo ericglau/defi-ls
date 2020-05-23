@@ -1,7 +1,7 @@
 # Ethereum DeFi Language Support Demo
 
 - Diagnostics and quick fixes for address checksum failures and non-checksum addresses.
-<img src="images/invalidchecksum.png" width="640">
+<img src="images/invalidchecksum.png" width="640"/>
 ![](images/convertchecksum.gif)
 - Code completion for Ethereum token addresses by name.
 - Hover over token addresses for live data including price, market cap, and daily volumes.
