@@ -992,13 +992,19 @@ async function getHoverMarkdownForAddress(address: string) {
 }
 
 async function getToken(address: string) {
+	let cachedTopToken = topTokensCache.get(address);
+	if (cachedTopToken !== undefined && cachedTopToken.lastUpdated > (Date.now() - cacheDurationSetting)) {
+		return cachedTopToken;
+	}
+
 	let cached = tokenCache.get(address);
 	if (cached !== undefined && cached.lastUpdated > (Date.now() - cacheDurationSetting)) {
 		return cached;
 	}
+
 	let token : Token | undefined = undefined;
 	if (amberdataApiKeySetting !== "") {
-		// Get top tokens by marketcap
+		// Get token market data
 		var options = {
 			method: 'GET',
 			url: 'https://web3api.io/api/v2/market/tokens/prices/'+address+'/latest',
