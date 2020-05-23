@@ -356,7 +356,7 @@ async function getTopTokens() {
 		}
 		var result = JSON.parse(body);
 		if (result !== undefined) {
-			result.forEach((element: { name: string, symbol:string, contract:string, decimals:number, icon:string, description:string, is_dao_or_governance_token:boolean, is_personal_token:boolean, standard:string }) => {
+			result.forEach((element: { name: string, symbol:string, contract:string }) => {
 				let token : Token = {
 					name: element.name,
 					symbol: element.symbol,
