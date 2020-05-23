@@ -869,6 +869,20 @@ connection.onCodeAction(
 
 		codeActions = await getCodeActions(diagnostics, textDocument, _params);
 
+		// see if it's an address, then get ABI
+		let range = _params.range
+			var text = textDocument.getText(range);
+			if (isValidEthereumAddress(text)) {
+				// generate ABI code action
+				let abi : JSON | undefined = await getContractAbi(text);
+				if (abi !== undefined) {
+					let title : string = `Generate contract ABI`;
+					let replacement = JSON.stringify(abi);
+					codeActions.push(getQuickFixInsert(title, range, replacement, textDocument));	
+				}
+			}
+		}
+
 		return codeActions;
 	}
 )
@@ -937,14 +951,6 @@ async function getCodeActions(diagnostics: Diagnostic[], textDocument: TextDocum
 			let title : string = `Convert to Ethereum address`;
 			let range : Range = diagnostic.range;
 			codeActions.push(getQuickFix(diagnostic, title, range, replacement, textDocument));
-		} else if (String(diagnostic.code).startsWith(DIAGNOSTIC_TYPE_GENERATE_ABI)) {
-			let abi : JSON | undefined = await getContractAbi(String(diagnostic.code).substring(DIAGNOSTIC_TYPE_GENERATE_ABI.length));
-			if (abi !== undefined) {
-				let title : string = `Generate contract ABI`;
-				let range : Range = diagnostic.range;
-				let replacement = JSON.stringify(abi);
-				codeActions.push(getQuickFixInsert(diagnostic, title, range, replacement, textDocument));	
-			}
 		}
 	}
 
@@ -969,7 +975,7 @@ function getQuickFix(diagnostic:Diagnostic, title:string, range:Range, replaceme
 }
 
 
-function getQuickFixInsert(diagnostic:Diagnostic, title:string, range:Range, insert:string, textDocument:TextDocument) : CodeAction {
+function getQuickFixInsert(title:string, range:Range, insert:string, textDocument:TextDocument) : CodeAction {
 	let textEdit : TextEdit = { 
 		range: range,
 		newText: insert
@@ -979,9 +985,8 @@ function getQuickFixInsert(diagnostic:Diagnostic, title:string, range:Range, ins
 	}
 	let codeAction : CodeAction = { 
 		title: title, 
-		kind: CodeActionKind.RefactorExtract,
-		edit: workspaceEdit,
-		diagnostics: [diagnostic]
+		kind: CodeActionKind.Source,
+		edit: workspaceEdit
 	}
 	return codeAction;
 }
