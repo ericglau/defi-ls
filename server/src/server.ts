@@ -91,7 +91,7 @@ var cacheDurationSetting: number;
 let ensCache : Map<string, string> = new Map();
 let ensReverseCache : Map<string, string> = new Map();
 let tokenCache : Map<string, Token> = new Map();
-let topTokensCache : Token[] = []
+let topTokensCache : Map<string, Token> = new Map();
 let addressMarkdownCache : Map<string, [Number, string]> = new Map(); // map address to [timestamp, markdown]
 
 connection.onInitialize((params: InitializeParams) => {
@@ -182,7 +182,7 @@ connection.onDidChangeConfiguration(change => {
 	ensCache.clear();
 	ensReverseCache.clear();
 	tokenCache.clear();
-	topTokensCache = []
+	topTokensCache.clear();
 	addressMarkdownCache.clear();
 
 	// Revalidate all open text documents
@@ -336,11 +336,16 @@ export interface Token {
 }
 
 async function getTopTokens() {
-	if (topTokensCache.length > 0 && topTokensCache[0].lastUpdated > (Date.now() - cacheDurationSetting)) {
-		return topTokensCache;
+	if (topTokensCache.size > 0) {
+		for (var entry of topTokensCache.entries()) {
+			var value = entry[1];
+			if (value.lastUpdated > (Date.now() - cacheDurationSetting)) {
+				// top tokens cache is not stale
+				return topTokensCache;
+			}
+		}
 	}
 
-	let tokensList : Token[] = []
 	let topTokensMap : Map<string, Token> = new Map();
 
 	// Get tokens from Tokens List json
@@ -368,7 +373,7 @@ async function getTopTokens() {
 					uniqueAddresses: undefined,
 					lastUpdated: Date.now()
 				}
-				tokensList.push(token)
+				topTokensMap.set(token.address, token)
 			});
 		}
 	}).catch((error: string) => { connection.console.log("Error getting tokens list: " + error) });
@@ -406,31 +411,9 @@ async function getTopTokens() {
 			}
 		}).catch((error: string) => { connection.console.log("Error getting top tokens: " + error) });
 	}
-
-	// merge market data into tokens list
-	let tokens : Token[] = []
-	tokensList.forEach(element => {
-		let result : Token | undefined = topTokensMap.get(element.address);
-		if (result !== undefined) {
-			// use market data token
-			tokens.push(result);
-		} else {
-			// use json result's token
-			tokens.push(element);
-		}
-	});
-	// add unlisted tokens that have market data
-	for (var entry of topTokensMap.entries()) {
-		var key = entry[0],
-			value = entry[1];
-		if (!tokens.includes(value)) {
-			value.name = value.name
-			tokens.push(value);
-		}
-	}
 	
-	topTokensCache = tokens;
-	return tokens;
+	topTokensCache = topTokensMap;
+	return topTokensMap;
 }
 
 // This handler provides the initial list of the completion items.
@@ -442,9 +425,10 @@ connection.onCompletion(
 		let completionItems : CompletionItem[] = [];
 
 		// Token completion items
-		let tokens : Token[] = await getTopTokens();
-		for (var i=0; i<tokens.length; i++) {
-			let token = tokens[i];
+		let tokens : Map<string, Token> = await getTopTokens();
+		for (var entry of tokens.entries()) {
+			var address = entry[0],
+				token = entry[1];
 			let textEdit : TextEdit = { 
 				range: {
 					start: _textDocumentPosition.position,
