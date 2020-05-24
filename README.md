@@ -13,7 +13,7 @@ Ethereum DeFi support for NodeJS applications in VS Code.
 - Hover over Ethereum addresses for live data including ETH/token balances and dollar values.
 - Automatic ENS name resolution and reverse resolution.
 - Quick fixes to convert addresses to ENS names and vice versa.
-- Code snippets for DeFi applications such as pTokens and Uniswap v2 SDKs.
+- Code snippets for DeFi applications such as pTokens and Uniswap v2 SDKs, and ERC20 Contract ABI.
 
 Click [here](DEMO.md) for a demo of the above features.
 
