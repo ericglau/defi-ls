@@ -52,7 +52,7 @@ export function activate(context: ExtensionContext) {
 	// Create the language client and start the client.
 	client = new LanguageClient(
 		'defi-ls',
-		'Ethereum Language Support for DeFi',
+		'Ethereum DeFi Language Support',
 		serverOptions,
 		clientOptions
 	);
