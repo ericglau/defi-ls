@@ -287,9 +287,9 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 				}
 
 				// Infer if it's possibly a contract, then show quickfix to generate contract ABI
-				//if (isContract(element.content)) { TODO
-					addDiagnostic(element, `Generate contract ABI`, 'Generate contract ABI from Etherscan', DiagnosticSeverity.Hint, DIAGNOSTIC_TYPE_GENERATE_ABI + element.content);
-				//}
+				if (await isContract(element.content)) {
+					addDiagnostic(element, `Generate contract ABI`, 'Highlight this address and use the tooltip to generate contract ABI from Etherscan', DiagnosticSeverity.Hint, DIAGNOSTIC_TYPE_GENERATE_ABI + element.content);
+				}
 			}
 		}
 	}
@@ -331,6 +331,20 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 		}
 		diagnostics.push(diagnostic);
 	}
+}
+
+async function isContract(address : string) : Promise<boolean> {
+	if (web3provider === undefined) {
+		return false;
+	}
+	let result : boolean = false;
+	let web3connection = new Web3(web3provider);
+	let code = await web3connection.eth.getCode(address).then(function (code: string) {
+		if (code !== "0x") {
+			result = true;
+		}
+	}).catch((e: string) => connection.console.log("Could not check whether address " + address + " is a contract due to error: " + e));
+	return result;
 }
 
 connection.onDidChangeWatchedFiles(_change => {
@@ -552,7 +566,7 @@ connection.onCompletion(
 		}
 		{
 			let snippet : string = 
-				"const erc20abi = [{\"constant\":true,\"inputs\":[],\"name\":\"name\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_spender\",\"type\":\"address\"},{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"totalSupply\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_from\",\"type\":\"address\"},{\"name\":\"_to\",\"type\":\"address\"},{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"decimals\",\"outputs\":[{\"name\":\"\",\"type\":\"uint8\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_owner\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"name\":\"balance\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_to\",\"type\":\"address\"},{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"transfer\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_owner\",\"type\":\"address\"},{\"name\":\"_spender\",\"type\":\"address\"}],\"name\":\"allowance\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"fallback\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"spender\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"}];";
+				"const ERC_20_ABI = [{\"constant\":true,\"inputs\":[],\"name\":\"name\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_spender\",\"type\":\"address\"},{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"totalSupply\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_from\",\"type\":\"address\"},{\"name\":\"_to\",\"type\":\"address\"},{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"decimals\",\"outputs\":[{\"name\":\"\",\"type\":\"uint8\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_owner\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"name\":\"balance\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"name\":\"\",\"type\":\"string\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"_to\",\"type\":\"address\"},{\"name\":\"_value\",\"type\":\"uint256\"}],\"name\":\"transfer\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"_owner\",\"type\":\"address\"},{\"name\":\"_spender\",\"type\":\"address\"}],\"name\":\"allowance\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"fallback\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"spender\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"}];";
 			insertSnippet(_textDocumentPosition, snippet, completionItems, undefined, "DeFi: ERC20 Contract ABI", 7);
 		}
 
@@ -869,22 +883,6 @@ connection.onCodeAction(
 
 		codeActions = await getCodeActions(diagnostics, textDocument, _params);
 
-		// // see if it's an address, then get ABI
-		// let range = _params.range
-		// var text = textDocument.getText(range);
-		// connection.console.log("TESTING1 TEXT IS " + text)
-		// if (isValidEthereumAddress(text)) {
-		// 	// generate ABI code action
-		// 	let abi : JSON | undefined = await getContractAbi(text);
-		// 	if (abi !== undefined) {
-		// 		let title : string = `Generate contract ABI`;
-		// 		let replacement = JSON.stringify(abi);
-		// 		connection.console.log("TESTING1 ABI TEXT IS " + replacement)
-
-		// 		codeActions.push(getQuickFixInsert(title, range, replacement, textDocument));	
-		// 	}
-		// }	
-
 		return codeActions;
 	}
 )
@@ -960,7 +958,7 @@ async function getCodeActions(diagnostics: Diagnostic[], textDocument: TextDocum
 			if (abi !== undefined) {
 				let title : string = `Generate contract ABI`;
 				let range : Range = diagnostic.range;
-				codeActions.push(getQuickFix(diagnostic, title, range, abi, textDocument));
+				codeActions.push(getRefactorExtract(diagnostic, title, range, abi, textDocument));
 			}
 		}
 	}
@@ -985,18 +983,21 @@ function getQuickFix(diagnostic:Diagnostic, title:string, range:Range, replaceme
 	return codeAction;
 }
 
-
-function getQuickFixInsert(diagnostic:Diagnostic, title:string, range:Range, insert:string, textDocument:TextDocument) : CodeAction {
+function getRefactorExtract(diagnostic:Diagnostic, title:string, range:Range, insert:string, textDocument:TextDocument) : CodeAction {
+	range.start.line += 1;
+	range.start.character = 0;
+	range.end.line += 1;
+	range.end.character = 0;
 	let textEdit : TextEdit = { 
 		range: range,
-		newText: insert
+		newText: "\nconst CONTRACT_ABI = " + insert + "\n\n"
 	};
 	let workspaceEdit : WorkspaceEdit = {
 		changes: { [textDocument.uri]:[textEdit] }
 	}
 	let codeAction : CodeAction = { 
 		title: title, 
-		kind: CodeActionKind.QuickFix,
+		kind: CodeActionKind.RefactorExtract,
 		edit: workspaceEdit,
 		diagnostics: [diagnostic]
 	}
