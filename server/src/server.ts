@@ -1074,7 +1074,7 @@ async function getContractAbi(address: string) {
 
 		await request(options, async function (error: string | undefined, response: any, body: any) {
 			if (error) {
-				connection.console.log("Request error while getting ABI: " + error);
+				connection.console.log("Request error while getting ABI for " + address + ": " + error);
 				return;
 			}
 			var result = JSON.parse(body);
@@ -1082,7 +1082,7 @@ async function getContractAbi(address: string) {
 				abi = result.result;
 				abiCache.set(address, [Date.now(), result.result]);
 			}
-		}).catch((error: string) => { connection.console.log("Error getting token: " + error) });
+		}).catch((error: string) => { connection.console.log("Error getting ABI for " + address + ": " + error) });
 	}
 	return abi;
 }
