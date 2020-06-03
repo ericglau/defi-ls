@@ -869,19 +869,21 @@ connection.onCodeAction(
 
 		codeActions = await getCodeActions(diagnostics, textDocument, _params);
 
-		// see if it's an address, then get ABI
-		let range = _params.range
-			var text = textDocument.getText(range);
-			if (isValidEthereumAddress(text)) {
-				// generate ABI code action
-				let abi : JSON | undefined = await getContractAbi(text);
-				if (abi !== undefined) {
-					let title : string = `Generate contract ABI`;
-					let replacement = JSON.stringify(abi);
-					codeActions.push(getQuickFixInsert(title, range, replacement, textDocument));	
-				}
-			}
-		}
+		// // see if it's an address, then get ABI
+		// let range = _params.range
+		// var text = textDocument.getText(range);
+		// connection.console.log("TESTING1 TEXT IS " + text)
+		// if (isValidEthereumAddress(text)) {
+		// 	// generate ABI code action
+		// 	let abi : JSON | undefined = await getContractAbi(text);
+		// 	if (abi !== undefined) {
+		// 		let title : string = `Generate contract ABI`;
+		// 		let replacement = JSON.stringify(abi);
+		// 		connection.console.log("TESTING1 ABI TEXT IS " + replacement)
+
+		// 		codeActions.push(getQuickFixInsert(title, range, replacement, textDocument));	
+		// 	}
+		// }	
 
 		return codeActions;
 	}
@@ -951,6 +953,15 @@ async function getCodeActions(diagnostics: Diagnostic[], textDocument: TextDocum
 			let title : string = `Convert to Ethereum address`;
 			let range : Range = diagnostic.range;
 			codeActions.push(getQuickFix(diagnostic, title, range, replacement, textDocument));
+		} else if (String(diagnostic.code).startsWith(DIAGNOSTIC_TYPE_GENERATE_ABI)) {
+			let address : string = String(diagnostic.code).substring(DIAGNOSTIC_TYPE_GENERATE_ABI.length);
+			// generate ABI code action
+			let abi : JSON | undefined = await getContractAbi(address);
+			if (abi !== undefined) {
+				let title : string = `Generate contract ABI`;
+				let range : Range = diagnostic.range;
+				codeActions.push(getQuickFix(diagnostic, title, range, abi, textDocument));
+			}
 		}
 	}
 
@@ -975,7 +986,7 @@ function getQuickFix(diagnostic:Diagnostic, title:string, range:Range, replaceme
 }
 
 
-function getQuickFixInsert(title:string, range:Range, insert:string, textDocument:TextDocument) : CodeAction {
+function getQuickFixInsert(diagnostic:Diagnostic, title:string, range:Range, insert:string, textDocument:TextDocument) : CodeAction {
 	let textEdit : TextEdit = { 
 		range: range,
 		newText: insert
@@ -985,8 +996,9 @@ function getQuickFixInsert(title:string, range:Range, insert:string, textDocumen
 	}
 	let codeAction : CodeAction = { 
 		title: title, 
-		kind: CodeActionKind.Source,
-		edit: workspaceEdit
+		kind: CodeActionKind.QuickFix,
+		edit: workspaceEdit,
+		diagnostics: [diagnostic]
 	}
 	return codeAction;
 }
