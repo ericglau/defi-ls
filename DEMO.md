@@ -22,3 +22,7 @@
 <img src="images/ptokens.gif"/><br/>
 <img src="images/uniswap.gif"/><br/>
 <img src="images/abi.gif"/><br/>
+
+- Refactor tooltip to generate ABI for arbitrary contracts
+
+<img src="images/refactorabi.gif"/><br/>
