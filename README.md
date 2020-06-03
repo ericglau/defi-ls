@@ -14,6 +14,7 @@ Ethereum DeFi support for NodeJS applications in VS Code.
 - Automatic ENS name resolution and reverse resolution.
 - Quick fixes to convert addresses to ENS names and vice versa.
 - Code snippets for DeFi applications such as pTokens and Uniswap v2 SDKs, and ERC20 Contract ABI.
+- Highlight a contract address to generate ABI for Etherscan verified contracts.
 
 Click [here](DEMO.md) for a demo of the above features.
 
