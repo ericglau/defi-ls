@@ -20,9 +20,10 @@ Click [here](DEMO.md) for a demo of the above features.
 
 ## Setup
 
-To enable full functionality, go to VS Code settings, search for the following settings and enter the required values:
+Go to the VS Code settings, search for the following settings and enter the required values:
 - Code Lens: Enable
 - Infura: Enter your Infura Project ID and Project Secret from https://infura.io/
 - Amberdata: Enter your Amberdata API key from https://amberdata.io/
+- Etherscan: Enter your Etherscan API key from https://etherscan.io/
 
-The above secrets and API key are optional and are used by the extension to access additional APIs for enhanced display data.
+The above secrets and API keys are not strictly required, but are needed if you want to enable full functionality of this extension.
