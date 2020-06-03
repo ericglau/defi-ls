@@ -95,6 +95,7 @@ let ensReverseCache : Map<string, string> = new Map();
 let tokenCache : Map<string, Token> = new Map();
 let topTokensCache : Map<string, Token> = new Map();
 let addressMarkdownCache : Map<string, [Number, string]> = new Map(); // map address to [timestamp, markdown]
+let abiCache : Map<string, [Number, JSON]> = new Map(); // map address to [timestamp, ABI JSON]
 
 connection.onInitialize((params: InitializeParams) => {
 	let capabilities = params.capabilities;
@@ -983,7 +984,7 @@ function getQuickFix(diagnostic:Diagnostic, title:string, range:Range, replaceme
 	return codeAction;
 }
 
-function getRefactorExtract(diagnostic:Diagnostic, title:string, range:Range, insert:string, textDocument:TextDocument) : CodeAction {
+function getRefactorExtract(diagnostic:Diagnostic, title:string, range:Range, insert:JSON, textDocument:TextDocument) : CodeAction {
 	range.start.line += 1;
 	range.start.character = 0;
 	range.end.line += 1;
@@ -1058,10 +1059,10 @@ async function getHoverMarkdownForAddress(address: string) {
 }
 
 async function getContractAbi(address: string) {
-	// let cached = abiCache.get(address);
-	// if (cached !== undefined && abiCache.lastUpdated > (Date.now() - cacheDurationSetting)) {
-	// 	return cached;
-	// }
+	let cached = abiCache.get(address);
+	if (cached !== undefined && cached[0] > (Date.now() - cacheDurationSetting)) {
+	 	return cached[1];
+	}
 
 	let abi : JSON | undefined = undefined;
 	if (etherscanApiKeySetting !== "") {
@@ -1079,6 +1080,7 @@ async function getContractAbi(address: string) {
 			var result = JSON.parse(body);
 			if (result !== undefined && result.status !== undefined && result.status === "1" && result.result !== undefined) {
 				abi = result.result;
+				abiCache.set(address, [Date.now(), result.result]);
 			}
 		}).catch((error: string) => { connection.console.log("Error getting token: " + error) });
 	}
