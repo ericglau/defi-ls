@@ -487,7 +487,7 @@ connection.onCompletion(
 			let snippet : string = 
 				"const token = new Token(ChainId.MAINNET, '0xc0FFee0000000000000000000000000000000000', 18, 'HOT', 'Caffeine')\n";
 			let imports = "import { ChainId, Token, TokenAmount, Pair, Trade, TradeType, Route } from '@uniswap/sdk'\n";
-			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: Uniswap token", 0);
+			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: Uniswap SDK - Token", 0);
 		}
 		// Uniswap pair
 		{
@@ -497,7 +497,7 @@ connection.onCompletion(
 				"\n"+
 				"const pair = new Pair(new TokenAmount(HOT, '2000000000000000000'), new TokenAmount(NOT, '1000000000000000000'))\n";
 			let imports = "import { ChainId, Token, TokenAmount, Pair, Trade, TradeType, Route } from '@uniswap/sdk'\n";
-			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: Uniswap pair", 1);
+			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: Uniswap SDK - Pair", 1);
 		}
 		// Uniswap route
 		{
@@ -508,7 +508,7 @@ connection.onCompletion(
 				"\n"+
 				"const route = new Route([HOT_NOT], NOT)\n";
 			let imports = "import { ChainId, Token, TokenAmount, Pair, Trade, TradeType, Route } from '@uniswap/sdk'\n";
-			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: Uniswap route", 2);
+			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: Uniswap SDK - Route", 2);
 		}
 		// Uniswap trade
 		{
@@ -520,7 +520,7 @@ connection.onCompletion(
 				"\n"+
 				"const trade = new Trade(NOT_TO_HOT, new TokenAmount(NOT, '1000000000000000'), TradeType.EXACT_INPUT)\n";
 			let imports = "import { ChainId, Token, TokenAmount, Pair, Trade, TradeType, Route } from '@uniswap/sdk'\n";
-			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: Uniswap trade", 3);
+			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: Uniswap SDK - Trade", 3);
 		}
 		// pTokens
 		{
@@ -534,7 +534,7 @@ connection.onCompletion(
 				"	}\n"+
 				"})\n";
 			let imports = "import { pTokens } from 'ptokens'\n";
-			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: pTokens", 4);
+			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: pTokens SDK", 4);
 		}
 		// pTokens (web3)
 		{
@@ -550,7 +550,7 @@ connection.onCompletion(
 				"	console.log('No web3 detected')\n"+
 				"}\n";
 			let imports = "import { pTokens } from 'ptokens'\n";
-			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: pTokens (web3)", 5);
+			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: pTokens SDK - web3", 5);
 		}
 		// pTokens (pBTC deposit address)
 		{
@@ -568,7 +568,7 @@ connection.onCompletion(
 				"	.once('onEthTxConfirmed', tx => ...)\n"+
 				"	.then(res => ...))\n";
 			let imports = "import { pTokens } from 'ptokens'\n";
-			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: pTokens (pBTC deposit address)", 6);
+			insertSnippet(_textDocumentPosition, snippet, completionItems, imports, "DeFi: pTokens SDK - pBTC deposit address", 6);
 		}
 		{
 			let snippet : string = 
