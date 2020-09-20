@@ -69,7 +69,7 @@ const RINKEBY: string = 'rinkeby';
 const GOERLI: string = 'goerli';
 const NETWORKS : string[] = [ MAINNET, ROPSTEN, KOVAN, RINKEBY, GOERLI];
 
-const TOKEN_LIST_JSON_URL = 'https://token-list-api.defipulse.com/tokens/list.json'
+const TOKEN_LIST_JSON_URL = 'https://gateway.ipfs.io/ipns/tokens.uniswap.org'
 
 var Web3 = require('web3');
 var web3 = new Web3();
@@ -390,12 +390,12 @@ async function getTopTokens() {
 			return;
 		}
 		var result = JSON.parse(body);
-		if (result !== undefined) {
-			result.forEach((element: { name: string, symbol:string, contract:string }) => {
+		if (result !== undefined && result.tokens !== undefined ) {
+			result.tokens.forEach((element: { name: string, symbol:string, address:string }) => {
 				let token : Token = {
 					name: element.name,
 					symbol: element.symbol,
-					address: getChecksumAddress(element.contract),
+					address: getChecksumAddress(element.address),
 					marketCap: undefined,
 					price: undefined,
 					totalSupply: undefined,
