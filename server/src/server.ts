@@ -391,19 +391,21 @@ async function getTopTokens() {
 		}
 		var result = JSON.parse(body);
 		if (result !== undefined && result.tokens !== undefined ) {
-			result.tokens.forEach((element: { name: string, symbol:string, address:string }) => {
-				let token : Token = {
-					name: element.name,
-					symbol: element.symbol,
-					address: getChecksumAddress(element.address),
-					marketCap: undefined,
-					price: undefined,
-					totalSupply: undefined,
-					tradeVolume: undefined,
-					uniqueAddresses: undefined,
-					lastUpdated: Date.now()
+			result.tokens.forEach((element: { name: string, symbol:string, address:string, chainId:string }) => {
+				if (element.chainId !== undefined && element.chainId == "1") { // Include mainnet tokens only
+					let token : Token = {
+						name: element.name,
+						symbol: element.symbol,
+						address: getChecksumAddress(element.address),
+						marketCap: undefined,
+						price: undefined,
+						totalSupply: undefined,
+						tradeVolume: undefined,
+						uniqueAddresses: undefined,
+						lastUpdated: Date.now()
+					}
+					topTokensMap.set(token.address, token)	
 				}
-				topTokensMap.set(token.address, token)
 			});
 		}
 	}).catch((error: string) => { connection.console.log("Error getting tokens list: " + error) });
@@ -436,7 +438,10 @@ async function getTopTokens() {
 						uniqueAddresses: element.uniqueAddresses,
 						lastUpdated: Date.now()
 					}
-					topTokensMap.set(token.address, token)
+					// only include tokens that are part of the token list json
+					if (topTokensMap.get(token.address) !== undefined) {
+						topTokensMap.set(token.address, token)
+					}
 				});
 			}
 		}).catch((error: string) => { connection.console.log("Error getting top tokens: " + error) });
