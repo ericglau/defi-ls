@@ -1,6 +1,8 @@
 # Ethereum DeFi Language Support
 
-Ethereum DeFi support for NodeJS applications in VS Code.
+Ethereum DeFi support for NodeJS applications in VS Code.  
+Features [Token Lists](https://tokenlists.org/) support, market data from [CoinGecko API](https://www.coingecko.com/en/api), and address information from [Amberdata](https://amberdata.io/).
+
 
 ![](images/token.gif)
 
@@ -15,6 +17,7 @@ Ethereum DeFi support for NodeJS applications in VS Code.
 - Quick fixes to convert addresses to ENS names and vice versa.
 - Code snippets for DeFi applications such as pTokens and Uniswap v2 SDKs, and ERC20 Contract ABI.
 - Highlight a contract address to generate ABI for Etherscan verified contracts.
+
 
 Click [here](DEMO.md) for a demo of the above features.
 
