@@ -366,12 +366,16 @@ export interface Token {
 	name: string;
 	symbol: string;
 	address: string;
+	marketData: MarketData | undefined;
+	lastUpdated: Number;
+}
+
+export interface MarketData {
 	marketCap: string | undefined;
 	price: string | undefined;
+	circulatingSupply: string | undefined;
 	totalSupply: string | undefined;
 	tradeVolume: string | undefined;
-	uniqueAddresses: string | undefined;
-	lastUpdated: Number;
 }
 
 async function getTopTokens() {
@@ -406,11 +410,7 @@ async function getTopTokens() {
 						name: element.name,
 						symbol: element.symbol,
 						address: getChecksumAddress(element.address),
-						marketCap: undefined,
-						price: undefined,
-						totalSupply: undefined,
-						tradeVolume: undefined,
-						uniqueAddresses: undefined,
+						marketData: undefined,
 						lastUpdated: Date.now()
 					}
 					topTokensMap.set(token.address, token)	
@@ -418,43 +418,6 @@ async function getTopTokens() {
 			});
 		}
 	}).catch((error: string) => { connection.console.log("Error getting tokens list: " + error) });
-
-	if (amberdataApiKeySetting !== "") {
-		// Get top tokens by marketcap
-		var options = {
-			method: 'GET',
-			url: 'https://web3api.io/api/v2/tokens/rankings',
-			qs: {direction: 'descending', sortType: 'marketCap', timeInterval: 'days'},
-			headers: {'x-api-key': amberdataApiKeySetting}
-		  };
-
-		await request(options, async function (error: string | undefined, response: any, body: any) {
-			if (error) {
-				connection.console.log("Request error getting top tokens: " + error);
-				return;
-			}
-			var result = JSON.parse(body);
-			if (result !== undefined && result.payload !== undefined && result.payload.data !== undefined && result.payload.data.length > 0) {
-				result.payload.data.forEach((element: { name: any; symbol: any; address: any; marketCap: any; currentPrice: any; totalSupply: any; tradeVolume: any; uniqueAddresses: any}) => {
-					let token : Token = {
-						name: element.name,
-						symbol: element.symbol,
-						address: getChecksumAddress(element.address),
-						marketCap: element.marketCap,
-						price: element.currentPrice,
-						totalSupply: element.totalSupply,
-						tradeVolume: element.tradeVolume,
-						uniqueAddresses: element.uniqueAddresses,
-						lastUpdated: Date.now()
-					}
-					// only include tokens that are part of the token list json
-					if (topTokensMap.get(token.address) !== undefined) {
-						topTokensMap.set(token.address, token)
-					}
-				});
-			}
-		}).catch((error: string) => { connection.console.log("Error getting top tokens: " + error) });
-	}
 	
 	topTokensCache = topTokensMap;
 	return topTokensMap;
@@ -634,14 +597,14 @@ function getChecksumAddress(address: string) {
 // This handler resolves additional information for the item selected in
 // the completion list.
 connection.onCompletionResolve(
-	(item: CompletionItem): CompletionItem => {
+	async (item: CompletionItem): Promise<CompletionItem> => {
 		if (<Token>item.data !== undefined) {
 			let token : Token = item.data;
 			item.detail = `${token.address}`;
 			let markdown : MarkupContent = {
 				kind: MarkupKind.Markdown,
 				value: 
-					getMarkdownForToken(token)
+					await getMarkdownForToken(token)
 			};
 			item.documentation = markdown;
 		}
@@ -671,30 +634,68 @@ function dollarFormat(amount: string) : string {
 		currency: 'USD',
 		minimumFractionDigits: 2
 	})
+	const subDollarFormat = new Intl.NumberFormat('en-US', {
+		style: 'currency',
+		currency: 'USD',
+		minimumFractionDigits: 8
+	})
 	try {
-		return dollarFormat.format(Number(amount))
+		if (Number(amount) < 0.01) {
+			return subDollarFormat.format(Number(amount))
+		} else {
+			return dollarFormat.format(Number(amount))
+		}		
 	} catch (e) {
 		return amount;
 	}
 }
 
-function getMarkdownForToken(token: Token): string {
+async function getMarkdownForToken(token: Token): Promise<string> {
+	// Get tokens from Tokens List json
+	if (token.marketData === undefined || token.lastUpdated <= (Date.now() - cacheDurationSetting)) {
+		var tokenMarketOptions = {
+			method: 'GET',
+			url: 'https://api.coingecko.com/api/v3/coins/ethereum/contract/' + token.address
+			};
+
+		await request(tokenMarketOptions, async function (error: string | undefined, response: any, body: any) {
+			if (error) {
+				connection.console.log("Request error getting token market information from Coingecko: " + error);
+				return;
+			}
+			var result = JSON.parse(body);
+			if (result !== undefined && result.market_data !== undefined) {
+				let marketData : MarketData = {
+					price: result.market_data.current_price.usd,
+					tradeVolume: result.market_data.total_volume.usd,
+					circulatingSupply: result.market_data.circulating_supply,
+					totalSupply: result.market_data.total_supply,
+					marketCap: result.market_data.market_cap.usd
+				}
+				token.marketData = marketData;
+			}
+		}).catch((error: string) => { connection.console.log("Error getting token market information from Coingecko: " + error) });
+	}
+
 	var buf = `**Token: ${token.name} (${token.symbol})**\n\n`;
-	if (token.price !== undefined) {
-		buf += `**Price:** ${dollarFormat(token.price)} USD  \n`;
+	if (token.marketData !== undefined) {
+		if (token.marketData.price !== undefined) {
+			buf += `**Price:** ${dollarFormat(token.marketData.price)} USD  \n`;
+		}
+		if (token.marketData.marketCap !== undefined) {
+			buf += `**Market Cap:** ${dollarFormat(token.marketData.marketCap)} USD  \n`;
+		}
+		if (token.marketData.circulatingSupply !== undefined) {
+			buf += `**Circulating Supply:** ${numberFormat(token.marketData.circulatingSupply, 0)}  \n`;
+		}
+		if (token.marketData.totalSupply !== undefined) {
+			buf += `**Total Supply:** ${numberFormat(token.marketData.totalSupply, 0)}  \n`;
+		}
+		if (token.marketData.tradeVolume !== undefined) {
+			buf += `**Trading Volume (Daily):** ${dollarFormat(token.marketData.tradeVolume)} USD  \n`;
+		}
 	}
-	if (token.marketCap !== undefined) {
-		buf += `**Market Cap:** ${dollarFormat(token.marketCap)} USD  \n`;
-	}
-	if (token.totalSupply !== undefined) {
-		buf += `**Total Supply:** ${numberFormat(token.totalSupply, 0)}  \n`;
-	}
-	if (token.uniqueAddresses !== undefined) {
-		buf += `**Unique Addresses (Daily):** ${numberFormat(token.uniqueAddresses, 0)}  \n`;
-	}
-	if (token.tradeVolume !== undefined) {
-		buf += `**Trading Volume (Daily):** ${dollarFormat(token.tradeVolume)} USD  \n`;
-	}
+
 	return buf;
 }
 
@@ -1102,49 +1103,7 @@ async function getContractAbi(address: string) {
 }
 
 async function getToken(address: string) {
-	let cachedTopToken = topTokensCache.get(address);
-	if (cachedTopToken !== undefined && cachedTopToken.lastUpdated > (Date.now() - cacheDurationSetting)) {
-		return cachedTopToken;
-	}
-
-	let cached = tokenCache.get(address);
-	if (cached !== undefined && cached.lastUpdated > (Date.now() - cacheDurationSetting)) {
-		return cached;
-	}
-
-	let token : Token | undefined = undefined;
-	if (amberdataApiKeySetting !== "") {
-		// Get token market data
-		var options = {
-			method: 'GET',
-			url: 'https://web3api.io/api/v2/market/tokens/prices/'+address+'/latest',
-			headers: {'x-api-key': amberdataApiKeySetting}
-		};
-
-		await request(options, async function (error: string | undefined, response: any, body: any) {
-			if (error) {
-				connection.console.log("Request error while getting token: " + error);
-				return;
-			}
-			var result = JSON.parse(body);
-			if (result !== undefined && result.payload !== undefined && result.payload.length > 0 && result.payload[0] !== undefined) {
-				let element = result.payload[0];
-				token = {
-					name: element.name,
-					symbol: element.symbol,
-					address: element.address,
-					marketCap: element.marketCapUSD,
-					price: element.priceUSD,
-					totalSupply: element.totalSupply,
-					tradeVolume: element.dailyVolumeUSD,
-					uniqueAddresses: element.uniqueAddresses,
-					lastUpdated: Date.now()
-				}
-				tokenCache.set(address, token)
-			}
-		}).catch((error: string) => { connection.console.log("Error getting token: " + error) });
-	}
-	return token;
+	return (await getTopTokens()).get(address);
 }
 
 async function getMarkdownForTokenAddress(address: string) {
