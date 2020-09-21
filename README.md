@@ -25,5 +25,6 @@ Go to the VS Code settings, search for the following settings and enter the requ
 - Infura: Enter your Infura Project ID and Project Secret from https://infura.io/
 - Amberdata: Enter your Amberdata API key from https://amberdata.io/
 - Etherscan: Enter your Etherscan API key from https://etherscan.io/
+- Token List: URL to a JSON file compatible with the [Token Lists standard](https://tokenlists.org/). Default is the [Uniswap Default List](https://gateway.ipfs.io/ipns/tokens.uniswap.org).
 
 The above secrets and API keys are not strictly required, but are needed if you want to enable full functionality of this extension.

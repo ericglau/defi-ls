@@ -69,7 +69,7 @@ const RINKEBY: string = 'rinkeby';
 const GOERLI: string = 'goerli';
 const NETWORKS : string[] = [ MAINNET, ROPSTEN, KOVAN, RINKEBY, GOERLI];
 
-const TOKEN_LIST_JSON_URL = 'https://gateway.ipfs.io/ipns/tokens.uniswap.org'
+const DEFAULT_TOKEN_LIST_JSON_URL = 'https://gateway.ipfs.io/ipns/tokens.uniswap.org'
 
 var Web3 = require('web3');
 var web3 = new Web3();
@@ -89,6 +89,7 @@ var ens: {
 var amberdataApiKeySetting: string = "";
 var etherscanApiKeySetting: string = "";
 var cacheDurationSetting: number;
+var tokenListUrlSetting: string = "";
 
 let ensCache : Map<string, string> = new Map();
 let ensReverseCache : Map<string, string> = new Map();
@@ -161,12 +162,13 @@ interface DefiSettings {
 	amberdataApiKey: string;
 	etherscanApiKey: string;
 	cacheDuration: number;
+	tokenListJsonUrl: string;
 }
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
-const defaultSettings: DefiSettings = { maxNumberOfProblems: 100, infuraProjectId: "", infuraProjectSecret: "", amberdataApiKey: "", etherscanApiKey: "", cacheDuration: 60000 };
+const defaultSettings: DefiSettings = { maxNumberOfProblems: 100, infuraProjectId: "", infuraProjectSecret: "", amberdataApiKey: "", etherscanApiKey: "", cacheDuration: 60000, tokenListJsonUrl: DEFAULT_TOKEN_LIST_JSON_URL };
 let globalSettings: DefiSettings = defaultSettings;
 
 // Cache the settings of all open documents
@@ -251,6 +253,13 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	} else {
 		etherscanApiKeySetting = settings.etherscanApiKey;
 		connection.console.info("Using Etherscan for contract ABIs.");
+	}
+
+	if (settings.tokenListJsonUrl === "") {
+		connection.console.error("No Token List has been configured.  Configure a Token List URL in VS Code settings for Ethereum DeFi.");
+	} else {
+		tokenListUrlSetting = settings.tokenListJsonUrl;
+		connection.console.info("Using Token List from " + tokenListUrlSetting);
 	}
 
 	if (web3provider === undefined) {
@@ -381,7 +390,7 @@ async function getTopTokens() {
 	// Get tokens from Tokens List json
 	var tokensListOpts = {
 		method: 'GET',
-		url: TOKEN_LIST_JSON_URL
+		url: tokenListUrlSetting
 		};
 
 	await request(tokensListOpts, async function (error: string | undefined, response: any, body: any) {

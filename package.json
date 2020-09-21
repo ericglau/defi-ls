@@ -69,6 +69,12 @@
 					"type": "string",
 					"description": "Your Etherscan.io API key"
 				},
+				"defi.tokenListJsonUrl": {
+					"scope": "window",
+					"type": "string",
+					"description": "Token List URL to use for token names and addresses. See https://tokenlists.org",
+					"default": "https://gateway.ipfs.io/ipns/tokens.uniswap.org"
+				},
 				"defi.cacheDuration": {
 					"scope": "window",
 					"type": "number",
