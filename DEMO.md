@@ -9,7 +9,7 @@
 - Hover over token addresses for live data including price, market cap, and daily volumes.
 - Code lens for Ethereum addresses with Etherscan links for mainnet and testnets.
 
-<img src="images/token.gif"/>
+<img src="images/tokendemo.gif"/>
 
 - Hover over Ethereum addresses for live data including ETH/token balances and dollar values.
 - Automatic ENS name resolution and reverse resolution.
