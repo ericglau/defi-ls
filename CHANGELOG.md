@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.0.4
+
+Added token descriptions.
+
 ## 0.0.3
 
 Added support for [Token Lists](https://tokenlists.org/), using Uniswap as the default list.

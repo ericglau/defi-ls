@@ -4,7 +4,7 @@
 	"description": "Ethereum DeFi support for NodeJS applications",
 	"author": "Eric Lau",
 	"license": "EPL-2.0",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"preview": true,
 	"icon": "images/logo.png",
 	"repository": {

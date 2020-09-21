@@ -371,6 +371,7 @@ export interface Token {
 }
 
 export interface MarketData {
+	description: string | undefined;
 	marketCap: string | undefined;
 	price: string | undefined;
 	circulatingSupply: string | undefined;
@@ -674,6 +675,7 @@ async function getMarkdownForToken(token: Token): Promise<string> {
 			var result = JSON.parse(body);
 			if (result !== undefined && result.market_data !== undefined) {
 				let marketData : MarketData = {
+					description: result.description.en,
 					price: result.market_data.current_price.usd,
 					tradeVolume: result.market_data.total_volume.usd,
 					circulatingSupply: result.market_data.circulating_supply,
@@ -701,6 +703,9 @@ async function getMarkdownForToken(token: Token): Promise<string> {
 		}
 		if (token.marketData.tradeVolume !== undefined) {
 			buf += `**Trading Volume (Daily):** ${dollarFormat(token.marketData.tradeVolume, true)} USD  \n`;
+		}
+		if (token.marketData.description !== undefined) {
+			buf += `\n${token.marketData.description}  \n`;
 		}
 	}
 
