@@ -617,7 +617,11 @@ export interface StringLocation {
     content: string;
 }
 
-function numberFormat(amount: string, decimals: number) : string {
+function numberFormat(amount: string, decimals: number, unknownIfZero: boolean) : string {
+	if (unknownIfZero && Number(amount) == 0) {
+		return "?";
+	}
+	
 	const numberFormat = new Intl.NumberFormat('en-US', {
 		minimumFractionDigits: decimals
 	})
@@ -628,7 +632,11 @@ function numberFormat(amount: string, decimals: number) : string {
 	}
 }
 
-function dollarFormat(amount: string) : string {
+function dollarFormat(amount: string, unknownIfZero: boolean) : string {
+	if (unknownIfZero && Number(amount) == 0) {
+		return "?";
+	}
+
 	const dollarFormat = new Intl.NumberFormat('en-US', {
 		style: 'currency',
 		currency: 'USD',
@@ -680,19 +688,19 @@ async function getMarkdownForToken(token: Token): Promise<string> {
 	var buf = `**Token: ${token.name} (${token.symbol})**\n\n`;
 	if (token.marketData !== undefined) {
 		if (token.marketData.price !== undefined) {
-			buf += `**Price:** ${dollarFormat(token.marketData.price)} USD  \n`;
+			buf += `**Price:** ${dollarFormat(token.marketData.price, true)} USD  \n`;
 		}
 		if (token.marketData.marketCap !== undefined) {
-			buf += `**Market Cap:** ${dollarFormat(token.marketData.marketCap)} USD  \n`;
+			buf += `**Market Cap:** ${dollarFormat(token.marketData.marketCap, true)} USD  \n`;
 		}
 		if (token.marketData.circulatingSupply !== undefined) {
-			buf += `**Circulating Supply:** ${numberFormat(token.marketData.circulatingSupply, 0)}  \n`;
+			buf += `**Circulating Supply:** ${numberFormat(token.marketData.circulatingSupply, 0, true)}  \n`;
 		}
 		if (token.marketData.totalSupply !== undefined) {
-			buf += `**Total Supply:** ${numberFormat(token.marketData.totalSupply, 0)}  \n`;
+			buf += `**Total Supply:** ${numberFormat(token.marketData.totalSupply, 0, true)}  \n`;
 		}
 		if (token.marketData.tradeVolume !== undefined) {
-			buf += `**Trading Volume (Daily):** ${dollarFormat(token.marketData.tradeVolume)} USD  \n`;
+			buf += `**Trading Volume (Daily):** ${dollarFormat(token.marketData.tradeVolume, true)} USD  \n`;
 		}
 	}
 
@@ -1163,7 +1171,7 @@ async function getMarkdownForRegularAddress(address: string) {
 				if (result !== undefined && result.payload !== undefined && result.payload.price !== undefined && result.payload.value !== undefined) {
 					var total = result.payload.price.value.total;
 					var quote = result.payload.price.value.quote;
-					buf += " (" + dollarFormat(total) + " USD @ " + dollarFormat(quote) + ")";
+					buf += " (" + dollarFormat(total, false) + " USD @ " + dollarFormat(quote, false) + ")";
 				}
 			}).catch((error: string) => { connection.console.log("Error getting ETH balance: " + error) });
 
@@ -1209,10 +1217,10 @@ async function getMarkdownForRegularAddress(address: string) {
 				}) => {
 					var symbol = element.symbol;
 					var amount = BigNumber(element.amount).divide(BigNumber(10).power(BigNumber(element.decimals)));
-					buf += "    " + numberFormat(amount, 0) + " " + symbol;
+					buf += "    " + numberFormat(amount, 0, false) + " " + symbol;
 					if (element.price != null) {
-						var quote = dollarFormat(element.price.amount.quote);
-						var totalValue = dollarFormat(element.price.amount.total);
+						var quote = dollarFormat(element.price.amount.quote, false);
+						var totalValue = dollarFormat(element.price.amount.total, false);
 						buf += " (" + totalValue + " USD @ " + quote + ") \n";
 					} else {
 						buf += " \n";
